@@ -147,6 +147,26 @@ describe("Lists API", () => {
             const data = (await res.json()) as { success: boolean };
             expect(data.success).toBe(false);
         });
+
+        test("rejects duplicate list names (case-insensitive)", async () => {
+            await app.request("/api/v1/lists", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Groceries" }),
+            });
+
+            const res = await app.request("/api/v1/lists", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "groceries" }),
+            });
+
+            expect(res.status).toBe(409);
+
+            const data = (await res.json()) as { success: boolean; error: string };
+            expect(data.success).toBe(false);
+            expect(data.error).toContain("already exists");
+        });
     });
 
     describe("PUT /api/v1/lists/:id", () => {

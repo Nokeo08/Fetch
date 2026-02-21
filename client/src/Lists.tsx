@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { listsApi, type ListWithCounts } from "./api/lists";
 import "./Lists.css";
@@ -29,10 +29,18 @@ export default function Lists() {
 
     const [draggedId, setDraggedId] = useState<number | null>(null);
 
+    const deleteModalRef = useRef<HTMLDivElement>(null);
+
     const showToast = useCallback((message: string, type: "success" | "error" = "success") => {
         setToast({ message, type });
         setTimeout(() => setToast(null), 3000);
     }, []);
+
+    useEffect(() => {
+        if (showDeleteModal && deleteModalRef.current) {
+            deleteModalRef.current.focus();
+        }
+    }, [showDeleteModal]);
 
     const fetchLists = useCallback(async () => {
         try {
@@ -365,11 +373,16 @@ export default function Lists() {
             {showDeleteModal && deletingList && (
                 <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
                     <div
+                        ref={deleteModalRef}
                         className="modal delete-confirm"
+                        tabIndex={-1}
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => {
                             if (e.key === "Enter" && !isSubmitting) {
                                 handleDelete();
+                            }
+                            if (e.key === "Escape") {
+                                setShowDeleteModal(false);
                             }
                         }}
                     >

@@ -49,6 +49,16 @@ const MIGRATIONS: Migration[] = [
             ALTER TABLE sessions DROP COLUMN last_activity;
         `,
     },
+    {
+        version: 3,
+        name: "add_unique_list_name",
+        up: (db: Database) => {
+            db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_lists_name_unique ON lists(name COLLATE NOCASE)");
+        },
+        down: `
+            DROP INDEX IF EXISTS idx_lists_name_unique;
+        `,
+    },
 ];
 
 function schemaTableExists(db: Database): boolean {

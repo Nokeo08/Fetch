@@ -66,9 +66,17 @@ export function createListsService(db: Database) {
             const maxOrder = db.query<{ max: number }, []>("SELECT COALESCE(MAX(sort_order), 0) as max FROM lists").get();
             const sortOrder = (maxOrder?.max ?? 0) + 1;
 
-            db.query(
-                "INSERT INTO lists (name, icon, sort_order, is_active) VALUES (?, ?, ?, 1)"
-            ).run(name, icon, sortOrder);
+            try {
+                db.query(
+                    "INSERT INTO lists (name, icon, sort_order, is_active) VALUES (?, ?, ?, 1)"
+                ).run(name, icon, sortOrder);
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                if (msg.includes("UNIQUE constraint failed")) {
+                    throw new Error("A list with this name already exists");
+                }
+                throw err;
+            }
 
             const row = db.query<DbList, []>("SELECT * FROM lists WHERE id = last_insert_rowid()").get();
             if (!row) {

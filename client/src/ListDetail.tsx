@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { listsApi, type ListWithCounts } from "./api/lists";
 import { sectionsApi, itemsApi, type SectionWithItems, type Item } from "./api/sections";
@@ -33,10 +33,18 @@ export default function ListDetail() {
 
     const [newItemNames, setNewItemNames] = useState<Record<number, string>>({});
 
+    const deleteSectionModalRef = useRef<HTMLDivElement>(null);
+
     const showToast = useCallback((message: string, type: "success" | "error" = "success") => {
         setToast({ message, type });
         setTimeout(() => setToast(null), 3000);
     }, []);
+
+    useEffect(() => {
+        if (showDeleteSectionModal && deleteSectionModalRef.current) {
+            deleteSectionModalRef.current.focus();
+        }
+    }, [showDeleteSectionModal]);
 
     const fetchData = useCallback(async () => {
         if (!listId) return;
@@ -466,11 +474,16 @@ export default function ListDetail() {
             {showDeleteSectionModal && deletingSection && (
                 <div className="modal-overlay" onClick={() => setShowDeleteSectionModal(false)}>
                     <div
+                        ref={deleteSectionModalRef}
                         className="modal delete-confirm"
+                        tabIndex={-1}
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => {
                             if (e.key === "Enter" && !isSubmitting) {
                                 handleDeleteSection();
+                            }
+                            if (e.key === "Escape") {
+                                setShowDeleteSectionModal(false);
                             }
                         }}
                     >

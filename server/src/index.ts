@@ -206,8 +206,14 @@ function createApiRoutes(
             if (!body.name || body.name.length < 1 || body.name.length > 100) {
                 return c.json<ApiResponse>({ success: false, error: "Name must be 1-100 characters" }, 400);
             }
-            const list = listsService.create(body.name, body.icon);
-            return c.json<ApiResponse>({ success: true, data: list }, 201);
+            try {
+                const list = listsService.create(body.name, body.icon);
+                return c.json<ApiResponse>({ success: true, data: list }, 201);
+            } catch (err) {
+                const message = err instanceof Error ? err.message : "Failed to create list";
+                const status = message.includes("already exists") ? 409 : 500;
+                return c.json<ApiResponse>({ success: false, error: message }, status);
+            }
         })
 
         .put("/lists/:id", async (c) => {
