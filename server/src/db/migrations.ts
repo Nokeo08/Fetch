@@ -6,6 +6,7 @@ type Migration = {
     name: string;
     up: (db: Database) => void;
     down: string;
+    verify?: (db: Database) => boolean;
 };
 
 function hasColumn(db: Database, table: string, column: string): boolean {
@@ -13,6 +14,13 @@ function hasColumn(db: Database, table: string, column: string): boolean {
         `SELECT name FROM pragma_table_info('${table}') WHERE name = '${column}'`
     ).all();
     return result.length > 0;
+}
+
+function indexExists(db: Database, name: string): boolean {
+    const result = db.query<{ name: string }[], [string]>(
+        "SELECT name FROM sqlite_master WHERE type='index' AND name=?"
+    ).get(name);
+    return !!result;
 }
 
 const MIGRATIONS: Migration[] = [
@@ -45,6 +53,7 @@ const MIGRATIONS: Migration[] = [
                 db.exec("ALTER TABLE sessions ADD COLUMN last_activity DATETIME DEFAULT CURRENT_TIMESTAMP");
             }
         },
+        verify: (db: Database) => hasColumn(db, "sessions", "last_activity"),
         down: `
             ALTER TABLE sessions DROP COLUMN last_activity;
         `,
@@ -55,6 +64,7 @@ const MIGRATIONS: Migration[] = [
         up: (db: Database) => {
             db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_lists_name_unique ON lists(name COLLATE NOCASE)");
         },
+        verify: (db: Database) => indexExists(db, "idx_lists_name_unique"),
         down: `
             DROP INDEX IF EXISTS idx_lists_name_unique;
         `,
@@ -82,6 +92,10 @@ export function runMigrations(db: Database): void {
                 const migration = MIGRATIONS.find((m) => m.version === v);
                 if (migration && migration.up) {
                     migration.up(db);
+
+                    if (migration.verify && !migration.verify(db)) {
+                        throw new Error(`Migration ${migration.name} verification failed`);
+                    }
                 }
                 recordMigration(db, v);
             }
