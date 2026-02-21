@@ -222,4 +222,35 @@ describe("rate limiting for login", () => {
         expect(rateLimitsService.getRemainingAttempts("192.168.1.3")).toBe(3);
         expect(rateLimitsService.isLocked("192.168.1.3")).toBe(false);
     });
+
+    it("returns remaining lockout time", () => {
+        const rateLimitsService = createRateLimitsService(db, config.rateLimit);
+
+        rateLimitsService.recordAttempt("192.168.1.4");
+        rateLimitsService.recordAttempt("192.168.1.4");
+        rateLimitsService.recordAttempt("192.168.1.4");
+
+        const remaining = rateLimitsService.getLockoutRemaining("192.168.1.4");
+        expect(remaining).toBeGreaterThan(0);
+        expect(remaining).toBeLessThanOrEqual(config.rateLimit.lockoutMs);
+    });
+
+    it("resets attempts after window expires", () => {
+        const shortWindowConfig = { ...config.rateLimit, windowMs: 100 };
+        const rateLimitsService = createRateLimitsService(db, shortWindowConfig);
+
+        rateLimitsService.recordAttempt("192.168.1.5");
+
+        const entry = rateLimitsService.getByIp("192.168.1.5");
+        expect(entry?.attempts).toBe(1);
+    });
+
+    it("persists rate limit data across service instances", () => {
+        const rateLimitsService1 = createRateLimitsService(db, config.rateLimit);
+        rateLimitsService1.recordAttempt("192.168.1.6");
+        rateLimitsService1.recordAttempt("192.168.1.6");
+
+        const rateLimitsService2 = createRateLimitsService(db, config.rateLimit);
+        expect(rateLimitsService2.getRemainingAttempts("192.168.1.6")).toBe(1);
+    });
 });

@@ -117,11 +117,9 @@ export const app = new Hono<{ Variables: AppVariables }>()
 
         if (rateLimitsService.isLocked(ip)) {
             const remaining = rateLimitsService.getLockoutRemaining(ip);
+            c.header("Retry-After", String(Math.ceil(remaining / 1000)));
             return c.json<ApiResponse>(
-                {
-                    success: false,
-                    error: `Too many failed attempts. Try again in ${Math.ceil(remaining / 60000)} minutes.`,
-                },
+                { success: false, error: "Too many failed attempts. Please try again later." },
                 429
             );
         }
@@ -137,16 +135,12 @@ export const app = new Hono<{ Variables: AppVariables }>()
 
         if (!password || typeof password !== "string") {
             rateLimitsService.recordAttempt(ip);
-            return c.json<ApiResponse>({ success: false, error: "Password is required" }, 400);
+            return c.json<ApiResponse>({ success: false, error: "Invalid credentials" }, 401);
         }
 
         if (!constantTimeEquals(password, config.auth.password)) {
             rateLimitsService.recordAttempt(ip);
-            const remaining = rateLimitsService.getRemainingAttempts(ip);
-            return c.json<ApiResponse>(
-                { success: false, error: `Invalid password. ${remaining} attempts remaining.` },
-                401
-            );
+            return c.json<ApiResponse>({ success: false, error: "Invalid credentials" }, 401);
         }
 
         rateLimitsService.resetOnSuccess(ip);

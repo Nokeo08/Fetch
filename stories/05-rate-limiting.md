@@ -4,6 +4,7 @@
 **Phase:** 2 - Core Features  
 **Estimate:** 1-2 days  
 **Dependencies:** Story 4
+**Status:** ✅ Complete
 
 ## Story
 
@@ -12,26 +13,26 @@ As a security measure, I want login attempts to be rate-limited so that brute fo
 ## Acceptance Criteria
 
 ### Rate Limit Tracking
-- [ ] Track failed login attempts by IP address
-- [ ] Store rate limit data in database
-- [ ] Persist across application restarts
-- [ ] Track last attempt timestamp
+- [x] Track failed login attempts by IP address
+- [x] Store rate limit data in database
+- [x] Persist across application restarts
+- [x] Track last attempt timestamp
 
 ### Rate Limit Rules
-- [ ] Maximum 5 failed attempts per 15 minutes per IP
-- [ ] After 5 failures, lock account for 30 minutes
-- [ ] Return 429 Too Many Requests when rate limited
-- [ ] Include Retry-After header with lockout time
+- [x] Maximum 5 failed attempts per 15 minutes per IP
+- [x] After 5 failures, lock account for 30 minutes
+- [x] Return 429 Too Many Requests when rate limited
+- [x] Include Retry-After header with lockout time
 
 ### Rate Limit Reset
-- [ ] Counter resets after successful login
-- [ ] Counter resets after 15 minutes of no attempts
-- [ ] Lockout expires automatically after 30 minutes
+- [x] Counter resets after successful login
+- [x] Counter resets after 15 minutes of no attempts
+- [x] Lockout expires automatically after 30 minutes
 
 ### Error Messages
-- [ ] Generic error message for failed login ("Invalid credentials")
-- [ ] No information leaked about password correctness
-- [ ] Rate limit message indicates wait time
+- [x] Generic error message for failed login ("Invalid credentials")
+- [x] No information leaked about password correctness
+- [x] Rate limit message indicates wait time
 
 ### Database Schema
 ```sql
@@ -73,14 +74,26 @@ ON LOGIN ATTEMPT:
 
 ## Dependencies
 
-- Story 4: Session-Based Authentication
+- Story 4: Session-Based Authentication ✅
 
 ## Definition of Done
 
-- [ ] Failed attempts tracked by IP
-- [ ] Account locks after 5 failures
-- [ ] 429 returned with Retry-After header
-- [ ] Lockout expires after 30 minutes
-- [ ] Successful login resets counter
-- [ ] Rate limit data persists across restarts
-- [ ] Tests verify rate limiting behavior
+- [x] Failed attempts tracked by IP
+- [x] Account locks after 5 failures
+- [x] 429 returned with Retry-After header
+- [x] Lockout expires after 30 minutes
+- [x] Successful login resets counter
+- [x] Rate limit data persists across restarts
+- [x] Tests verify rate limiting behavior
+
+## Implementation
+
+### Files
+- `server/src/services/rate-limits.ts` - Rate limiting service
+- `server/src/index.ts` - Login endpoint with rate limiting
+- `server/src/auth.test.ts` - Rate limiting unit tests
+- `server/src/login.test.ts` - Integration tests for login with rate limiting
+
+### Tests
+- 27 tests for auth and login rate limiting
+- 173 total tests passing
