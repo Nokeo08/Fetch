@@ -245,7 +245,6 @@ export default function Lists() {
                                 <button
                                     className="delete-btn"
                                     onClick={() => openDeleteModal(list)}
-                                    disabled={lists.length <= 1}
                                 >
                                     Delete
                                 </button>

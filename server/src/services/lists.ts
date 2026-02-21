@@ -124,11 +124,6 @@ export function createListsService(db: Database) {
         },
 
         delete(id: number): boolean {
-            const countResult = db.query<{ count: number }, []>("SELECT COUNT(*) as count FROM lists").get();
-            if (countResult && countResult.count <= 1) {
-                throw new Error("Cannot delete the last remaining list");
-            }
-
             const result = db.query("DELETE FROM lists WHERE id = ?").run(id);
             return result.changes > 0;
         },

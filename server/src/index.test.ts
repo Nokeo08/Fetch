@@ -260,28 +260,17 @@ describe("Lists API", () => {
             expect(data.success).toBe(true);
         });
 
-        test("cannot delete last remaining list", async () => {
+        test("can delete last remaining list", async () => {
             const listsRes = await app.request("/api/v1/lists");
             const listsData = (await listsRes.json()) as { success: boolean; data: Array<{ id: number }> };
 
             for (const list of listsData.data) {
-                if (listsData.data.length <= 1) break;
                 await app.request(`/api/v1/lists/${list.id}`, { method: "DELETE" });
             }
 
             const remainingListsRes = await app.request("/api/v1/lists");
             const remainingListsData = (await remainingListsRes.json()) as { success: boolean; data: Array<{ id: number }> };
-            
-            if (remainingListsData.data.length === 1) {
-                const res = await app.request(`/api/v1/lists/${remainingListsData.data[0].id}`, {
-                    method: "DELETE",
-                });
-                expect(res.status).toBe(400);
-
-                const data = (await res.json()) as { success: boolean; error: string };
-                expect(data.success).toBe(false);
-                expect(data.error).toContain("last");
-            }
+            expect(remainingListsData.data).toHaveLength(0);
         });
     });
 

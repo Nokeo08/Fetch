@@ -105,9 +105,11 @@ describe("ListsService", () => {
             expect(listsService.getById(list.id)).toBeNull();
         });
 
-        test("should throw when deleting last list", () => {
+        test("should allow deleting last list", () => {
             const list = listsService.create("Only List");
-            expect(() => listsService.delete(list.id)).toThrow("Cannot delete the last remaining list");
+            const deleted = listsService.delete(list.id);
+            expect(deleted).toBe(true);
+            expect(listsService.getAll()).toHaveLength(0);
         });
     });
 
