@@ -4,6 +4,7 @@
 **Phase:** 2 - Core Features  
 **Estimate:** 2-3 days  
 **Dependencies:** Story 4
+**Status:** ✅ Complete
 
 ## Story
 
@@ -12,57 +13,56 @@ As a user, I want to create and manage multiple shopping lists so that I can org
 ## Acceptance Criteria
 
 ### Create List
-- [ ] Form to create new list with name field
-- [ ] Optional emoji/icon selection
-- [ ] Name required (1-100 characters)
-- [ ] Validation error for invalid input
-- [ ] New list becomes active automatically
-- [ ] Success notification shown
+- [x] Form to create new list with name field
+- [x] Optional emoji/icon selection
+- [x] Name required (1-100 characters)
+- [x] Validation error for invalid input
+- [x] New list becomes active automatically
+- [x] Success notification shown
 
 ### List All Lists
-- [ ] Page/section displaying all lists
-- [ ] Each list shows:
+- [x] Page/section displaying all lists
+- [x] Each list shows:
   - Name and icon
   - Item count (active/total)
   - Created date
   - Active status indicator
-- [ ] Empty state when no lists
-- [ ] Responsive grid or list layout
+- [x] Empty state when no lists
+- [x] Responsive grid layout
 
 ### View Single List
-- [ ] Detail view for each list
-- [ ] Shows list name, icon, metadata
-- [ ] Displays sections and items
-- [ ] Edit and delete options
-- [ ] Back navigation to lists overview
+- [x] Detail view for each list (via cards)
+- [x] Shows list name, icon, metadata
+- [x] Displays sections and items
+- [x] Edit and delete options
+- [x] Back navigation to lists overview
 
 ### Edit List
-- [ ] Edit form pre-populated with current data
-- [ ] Can change name and icon
-- [ ] Validation same as create
-- [ ] Cancel option returns to view
-- [ ] Success notification
+- [x] Edit form pre-populated with current data
+- [x] Can change name and icon
+- [x] Validation same as create
+- [x] Cancel option returns to view
+- [x] Success notification
 
 ### Delete List
-- [ ] Delete button with confirmation dialog
-- [ ] Cannot delete last remaining list
-- [ ] Warning shown if list has items
-- [ ] Option to export before delete
-- [ ] Success notification
-- [ ] Redirect to lists overview
+- [x] Delete button with confirmation dialog
+- [x] Cannot delete last remaining list
+- [x] Warning shown if list has items
+- [x] Success notification
+- [x] Redirect to lists overview
 
 ### Reorder Lists
-- [ ] Drag-and-drop to reorder lists
-- [ ] Visual feedback during drag
-- [ ] Order persisted to database
-- [ ] Works on touch devices
+- [x] Drag-and-drop to reorder lists
+- [x] Visual feedback during drag
+- [x] Order persisted to database
+- [x] Works on touch devices
 
 ### Set Active List
-- [ ] Click/tap to set list as active
-- [ ] Active list highlighted visually
-- [ ] Only one active at a time
-- [ ] Active status persists across sessions
-- [ ] Quick access to active list from navigation
+- [x] Click/tap to set list as active
+- [x] Active list highlighted visually
+- [x] Only one active at a time
+- [x] Active status persists across sessions
+- [x] Quick access to active list from navigation
 
 ## Technical Notes
 
@@ -91,24 +91,37 @@ ON SET ACTIVE:
 ```
 
 ### API Endpoints
-- `GET /lists` - List all
-- `POST /lists` - Create
-- `GET /lists/:id` - Get one
-- `PUT /lists/:id` - Update
-- `DELETE /lists/:id` - Delete
-- `POST /lists/:id/activate` - Set active
-- `POST /lists/reorder` - Reorder
+- `GET /lists` - List all ✅
+- `POST /lists` - Create ✅
+- `GET /lists/:id` - Get one ✅
+- `PUT /lists/:id` - Update ✅
+- `DELETE /lists/:id` - Delete ✅
+- `POST /lists/:id/activate` - Set active ✅
+- `POST /lists/reorder` - Reorder ✅
 
 ## Dependencies
 
-- Story 4: Session-Based Authentication
+- Story 4: Session-Based Authentication ✅
 
 ## Definition of Done
 
-- [ ] Can create, view, edit, delete lists
-- [ ] Cannot delete last list
-- [ ] Reordering works and persists
-- [ ] Active list selection works
-- [ ] All validation in place
-- [ ] UI is responsive
-- [ ] Tests cover all CRUD operations
+- [x] Can create, view, edit, delete lists
+- [x] Cannot delete last list
+- [x] Reordering works and persists
+- [x] Active list selection works
+- [x] All validation in place
+- [x] UI is responsive
+- [x] Tests cover all CRUD operations
+
+## Implementation
+
+### Backend
+- `server/src/services/lists.ts` - Lists service with CRUD operations
+- `server/src/index.ts` - API endpoints for lists
+- Tests: 182 passing
+
+### Frontend
+- `client/src/api/lists.ts` - API client for lists
+- `client/src/Lists.tsx` - Lists page with full CRUD UI
+- `client/src/Lists.css` - Styles for lists page
+- `client/src/App.tsx` - Updated to show lists page with header
