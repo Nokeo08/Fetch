@@ -1,9 +1,7 @@
-import { describe, test, expect, beforeAll } from "bun:test";
+process.env.DISABLE_AUTH = "true";
+process.env.APP_PASSWORD = "test-password";
 
-beforeAll(() => {
-    process.env.DISABLE_AUTH = "true";
-});
-
+import { describe, test, expect } from "bun:test";
 import app from "./index";
 
 describe("HTTP Server", () => {
