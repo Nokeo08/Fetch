@@ -1,9 +1,13 @@
+import { config as loadEnv } from "dotenv";
+import { resolve } from "path";
+loadEnv({ path: resolve(import.meta.dir, "../../.env") });
+
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import { createDatabase, runMigrations, cleanupExpiredSessions, cleanupExpiredRateLimits, closeDatabase } from "./db";
 import { getConfig, validateConfig } from "./config";
 import { createListsService, createSectionsService, createItemsService } from "./services";
-import { errorHandler, notFoundHandler, requestLogger, securityHeaders } from "./middleware";
+import { errorHandler, notFoundHandler, requestLogger, securityHeaders, corsHeaders } from "./middleware";
 import type { ApiResponse, ItemStatus } from "shared/dist";
 import type { Database } from "bun:sqlite";
 
@@ -49,6 +53,7 @@ export function checkDatabaseHealth(db: Database): { status: string; latency?: n
 }
 
 export const app = new Hono<{ Variables: AppVariables }>()
+    .use("*", corsHeaders({ origins: ["*"], credentials: true }))
     .use("*", requestLogger())
     .use("*", errorHandler())
     .use("*", securityHeaders())
