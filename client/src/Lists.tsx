@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { listsApi, type ListWithCounts } from "./api/lists";
 import "./Lists.css";
 
@@ -10,6 +11,7 @@ type Toast = {
 };
 
 export default function Lists() {
+    const navigate = useNavigate();
     const [lists, setLists] = useState<ListWithCounts[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
@@ -217,6 +219,7 @@ export default function Lists() {
                             onDragStart={() => handleDragStart(list.id)}
                             onDragOver={(e) => handleDragOver(e, list.id)}
                             onDragEnd={handleDragEnd}
+                            onClick={() => navigate(`/lists/${list.id}`)}
                         >
                             <div className="list-card-header">
                                 <span className="drag-handle">⋮⋮</span>
@@ -231,17 +234,17 @@ export default function Lists() {
                             </div>
 
                             <div className="list-actions">
-                                <button className="edit-btn" onClick={() => openEditModal(list)}>
+                                <button className="edit-btn" onClick={(e) => { e.stopPropagation(); openEditModal(list); }}>
                                     Edit
                                 </button>
                                 {!list.isActive && (
-                                    <button className="activate-btn" onClick={() => handleActivate(list)}>
+                                    <button className="activate-btn" onClick={(e) => { e.stopPropagation(); handleActivate(list); }}>
                                         Activate
                                     </button>
                                 )}
                                 <button
                                     className="delete-btn"
-                                    onClick={() => openDeleteModal(list)}
+                                    onClick={(e) => { e.stopPropagation(); openDeleteModal(list); }}
                                 >
                                     Delete
                                 </button>

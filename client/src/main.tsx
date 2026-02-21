@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./index.css";
 import App from "./App.tsx";
 import Login from "./Login.tsx";
+import ListDetail from "./ListDetail.tsx";
 import { AuthProvider, useAuth } from "./AuthContext.tsx";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,14 @@ function AppRoutes() {
                 path="/login"
                 element={
                     isAuthenticated ? <Navigate to="/" replace /> : <Login />
+                }
+            />
+            <Route
+                path="/lists/:id"
+                element={
+                    <ProtectedRoute>
+                        <ListDetail />
+                    </ProtectedRoute>
                 }
             />
             <Route
