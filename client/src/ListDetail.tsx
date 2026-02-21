@@ -465,7 +465,15 @@ export default function ListDetail() {
 
             {showDeleteSectionModal && deletingSection && (
                 <div className="modal-overlay" onClick={() => setShowDeleteSectionModal(false)}>
-                    <div className="modal delete-confirm" onClick={(e) => e.stopPropagation()}>
+                    <div
+                        className="modal delete-confirm"
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" && !isSubmitting) {
+                                handleDeleteSection();
+                            }
+                        }}
+                    >
                         <h2>Delete Section?</h2>
                         <p>Are you sure you want to delete "{deletingSection.name}"?</p>
                         {deletingSection.items.length > 0 && (

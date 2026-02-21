@@ -364,7 +364,15 @@ export default function Lists() {
 
             {showDeleteModal && deletingList && (
                 <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
-                    <div className="modal delete-confirm" onClick={(e) => e.stopPropagation()}>
+                    <div
+                        className="modal delete-confirm"
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" && !isSubmitting) {
+                                handleDelete();
+                            }
+                        }}
+                    >
                         <h2>Delete List?</h2>
                         <p>Are you sure you want to delete "{deletingList.name}"?</p>
                         {(deletingList.itemCount > 0 || deletingList.sectionCount > 0) && (
