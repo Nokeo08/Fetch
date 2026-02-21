@@ -80,7 +80,7 @@ export default function Lists() {
             if (res.success && res.data) {
                 setLists((prev) => [...prev, { ...res.data!, itemCount: 0, sectionCount: 0 }]);
                 setShowCreateModal(false);
-                showToast("List created successfully");
+                showToast("List added successfully");
             } else {
                 showToast(res.error || "Failed to create list", "error");
             }
@@ -257,7 +257,7 @@ export default function Lists() {
             {showCreateModal && (
                 <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
-                        <h2>Create New List</h2>
+                        <h2>Add List</h2>
                         <div className="modal-form">
                             <div className="form-group">
                                 <label htmlFor="name">Name</label>
@@ -266,6 +266,11 @@ export default function Lists() {
                                     type="text"
                                     value={formName}
                                     onChange={(e) => setFormName(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" && formName.trim() && !isSubmitting) {
+                                            handleCreate();
+                                        }
+                                    }}
                                     placeholder="Enter list name"
                                     maxLength={100}
                                     autoFocus
@@ -296,7 +301,7 @@ export default function Lists() {
                                 onClick={handleCreate}
                                 disabled={!formName.trim() || isSubmitting}
                             >
-                                {isSubmitting ? "Creating..." : "Create"}
+                                {isSubmitting ? "Adding..." : "Add"}
                             </button>
                         </div>
                     </div>
@@ -315,6 +320,11 @@ export default function Lists() {
                                     type="text"
                                     value={formName}
                                     onChange={(e) => setFormName(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" && formName.trim() && !isSubmitting) {
+                                            handleEdit();
+                                        }
+                                    }}
                                     placeholder="Enter list name"
                                     maxLength={100}
                                     autoFocus

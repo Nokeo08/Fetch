@@ -94,7 +94,7 @@ export default function ListDetail() {
             if (res.success && res.data) {
                 setSections((prev) => [...prev, { ...res.data!, items: [] }]);
                 setShowSectionModal(false);
-                showToast("Section created");
+                showToast("Section added");
             } else {
                 showToast(res.error || "Failed to create section", "error");
             }
@@ -352,12 +352,17 @@ export default function ListDetail() {
                                 ) : (
                                     <div className="items-list">
                                         {section.items.map((item) => (
-                                            <div key={item.id} className="item-row">
+                                            <div
+                                                key={item.id}
+                                                className="item-row"
+                                                onClick={() => handleToggleItem(item, section.id)}
+                                            >
                                                 <input
                                                     type="checkbox"
                                                     className="item-checkbox"
                                                     checked={item.status === "completed"}
                                                     onChange={() => handleToggleItem(item, section.id)}
+                                                    onClick={(e) => e.stopPropagation()}
                                                 />
                                                 <span className={`item-name ${item.status === "completed" ? "completed" : ""}`}>
                                                     {item.name}
@@ -365,7 +370,7 @@ export default function ListDetail() {
                                                 {item.quantity && (
                                                     <span className="item-quantity">{item.quantity}</span>
                                                 )}
-                                                <div className="item-actions">
+                                                <div className="item-actions" onClick={(e) => e.stopPropagation()}>
                                                     <button onClick={() => handleDeleteItem(item.id, section.id)}>
                                                         ✕
                                                     </button>
@@ -392,6 +397,11 @@ export default function ListDetail() {
                                     type="text"
                                     value={sectionName}
                                     onChange={(e) => setSectionName(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" && sectionName.trim() && !isSubmitting) {
+                                            handleCreateSection();
+                                        }
+                                    }}
                                     placeholder="Enter section name"
                                     maxLength={100}
                                     autoFocus
@@ -407,7 +417,7 @@ export default function ListDetail() {
                                 onClick={handleCreateSection}
                                 disabled={!sectionName.trim() || isSubmitting}
                             >
-                                {isSubmitting ? "Creating..." : "Create"}
+                                {isSubmitting ? "Adding..." : "Add"}
                             </button>
                         </div>
                     </div>
@@ -426,6 +436,11 @@ export default function ListDetail() {
                                     type="text"
                                     value={sectionName}
                                     onChange={(e) => setSectionName(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" && sectionName.trim() && !isSubmitting) {
+                                            handleEditSection();
+                                        }
+                                    }}
                                     placeholder="Enter section name"
                                     maxLength={100}
                                     autoFocus
