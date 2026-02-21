@@ -1,51 +1,32 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation } from "@tanstack/react-query";
+import { useAuth } from "./AuthContext";
 import "./Login.css";
-
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
-
-type LoginResponse = {
-    success: boolean;
-    data?: {
-        message: string;
-    };
-    error?: string;
-};
 
 export default function Login() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { login } = useAuth();
     const navigate = useNavigate();
 
-    const loginMutation = useMutation({
-        mutationFn: async (password: string): Promise<LoginResponse> => {
-            const res = await fetch(`${SERVER_URL}/api/login`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ password }),
-                credentials: "include",
-            });
-            return res.json() as Promise<LoginResponse>;
-        },
-        onSuccess: (data) => {
-            if (data.success) {
-                navigate("/");
-            } else {
-                setError(data.error || "Login failed");
-            }
-        },
-        onError: (err: unknown) => {
-            setError(err instanceof Error ? err.message : "Login failed");
-        },
-    });
-
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
-        loginMutation.mutate(password);
+        setIsSubmitting(true);
+
+        try {
+            const success = await login(password);
+            if (success) {
+                navigate("/");
+            } else {
+                setError("Invalid password");
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Login failed");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -72,10 +53,10 @@ export default function Login() {
 
                     <button
                         type="submit"
-                        disabled={loginMutation.isPending}
+                        disabled={isSubmitting}
                         className="login-button"
                     >
-                        {loginMutation.isPending ? "Signing in..." : "Sign In"}
+                        {isSubmitting ? "Signing in..." : "Sign In"}
                     </button>
                 </form>
             </div>
