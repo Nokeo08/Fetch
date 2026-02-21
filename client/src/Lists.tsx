@@ -205,10 +205,7 @@ export default function Lists() {
 
             {lists.length === 0 ? (
                 <div className="lists-empty">
-                    <p>No shopping lists yet. Create your first list to get started!</p>
-                    <button className="create-btn" onClick={openCreateModal}>
-                        + Create List
-                    </button>
+                    <p>No shopping lists yet. Click "+ New List" to get started!</p>
                 </div>
             ) : (
                 <div className="lists-grid">
