@@ -1,17 +1,13 @@
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
 
-type AuthState = {
+type AuthContextType = {
     isAuthenticated: boolean | null;
     isLoading: boolean;
-};
-
-type AuthContextType = AuthState & {
     login: (password: string) => Promise<boolean>;
     logout: () => Promise<void>;
-    checkAuth: () => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -40,32 +36,50 @@ type LoginResponse = {
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [authState, setAuthState] = useState<AuthState>({
+    const [state, setState] = useState<{
+        isAuthenticated: boolean | null;
+        isLoading: boolean;
+    }>({
         isAuthenticated: null,
         isLoading: true,
     });
 
-    const checkAuthMutation = useMutation({
-        mutationFn: async (): Promise<boolean> => {
-            const res = await fetch(`${SERVER_URL}/api/me`, {
-                credentials: "include",
-            });
-            if (res.status === 401) {
-                return false;
+    useEffect(() => {
+        let mounted = true;
+
+        async function checkAuth() {
+            try {
+                const res = await fetch(`${SERVER_URL}/api/me`, {
+                    credentials: "include",
+                });
+                if (!mounted) return;
+
+                if (res.status === 401) {
+                    setState({ isAuthenticated: false, isLoading: false });
+                    return;
+                }
+
+                const data = (await res.json()) as MeResponse;
+                setState({
+                    isAuthenticated: data.success && data.data?.authenticated === true,
+                    isLoading: false,
+                });
+            } catch {
+                if (mounted) {
+                    setState({ isAuthenticated: false, isLoading: false });
+                }
             }
-            const data = (await res.json()) as MeResponse;
-            return data.success && data.data?.authenticated === true;
-        },
-    });
+        }
 
-    const checkAuth = useCallback(async (): Promise<boolean> => {
-        const result = await checkAuthMutation.mutateAsync();
-        setAuthState({ isAuthenticated: result, isLoading: false });
-        return result;
-    }, [checkAuthMutation]);
+        checkAuth();
 
-    const loginMutation = useMutation({
-        mutationFn: async (password: string): Promise<boolean> => {
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    const login = useCallback(async (password: string): Promise<boolean> => {
+        try {
             const res = await fetch(`${SERVER_URL}/api/login`, {
                 method: "POST",
                 headers: {
@@ -75,46 +89,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 credentials: "include",
             });
             const data = (await res.json()) as LoginResponse;
-            return data.success;
-        },
-    });
-
-    const login = useCallback(
-        async (password: string): Promise<boolean> => {
-            const result = await loginMutation.mutateAsync(password);
-            if (result) {
-                setAuthState({ isAuthenticated: true, isLoading: false });
+            if (data.success) {
+                setState({ isAuthenticated: true, isLoading: false });
             }
-            return result;
-        },
-        [loginMutation]
-    );
+            return data.success;
+        } catch {
+            return false;
+        }
+    }, []);
 
-    const logoutMutation = useMutation({
-        mutationFn: async (): Promise<void> => {
+    const logout = useCallback(async (): Promise<void> => {
+        try {
             await fetch(`${SERVER_URL}/api/logout`, {
                 method: "POST",
                 credentials: "include",
             });
-        },
-    });
-
-    const logout = useCallback(async (): Promise<void> => {
-        await logoutMutation.mutateAsync();
-        setAuthState({ isAuthenticated: false, isLoading: false });
-    }, [logoutMutation]);
-
-    useEffect(() => {
-        checkAuth();
-    }, [checkAuth]);
+        } finally {
+            setState({ isAuthenticated: false, isLoading: false });
+        }
+    }, []);
 
     return (
         <AuthContext.Provider
             value={{
-                ...authState,
+                isAuthenticated: state.isAuthenticated,
+                isLoading: state.isLoading,
                 login,
                 logout,
-                checkAuth,
             }}
         >
             {children}

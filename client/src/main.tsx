@@ -58,14 +58,18 @@ function AppRoutes() {
     );
 }
 
-createRoot(rootElement).render(
-    <StrictMode>
-        <QueryClientProvider client={queryClient}>
-            <BrowserRouter>
-                <AuthProvider>
-                    <AppRoutes />
-                </AuthProvider>
-            </BrowserRouter>
-        </QueryClientProvider>
-    </StrictMode>,
-);
+function Main() {
+    return (
+        <StrictMode>
+            <QueryClientProvider client={queryClient}>
+                <BrowserRouter>
+                    <AuthProvider>
+                        <AppRoutes />
+                    </AuthProvider>
+                </BrowserRouter>
+            </QueryClientProvider>
+        </StrictMode>
+    );
+}
+
+createRoot(rootElement).render(<Main />);

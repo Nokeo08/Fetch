@@ -56,34 +56,40 @@ export function corsHeaders(options: {
     return async (c, next) => {
         const origin = c.req.header("origin");
 
-        if (c.req.method === "OPTIONS") {
-            const allowOrigin = origins.includes("*") || (origin && origins.includes(origin)) 
-                ? (origins.includes("*") ? "*" : origin) 
-                : origins[0];
-            
-            c.res.headers.set("Access-Control-Allow-Origin", allowOrigin || "*");
-            c.res.headers.set("Access-Control-Allow-Methods", methods.join(", "));
-            c.res.headers.set("Access-Control-Allow-Headers", headers.join(", "));
-            
-            if (credentials) {
-                c.res.headers.set("Access-Control-Allow-Credentials", "true");
+        const allowOrigin = (() => {
+            if (credentials && origin) {
+                if (origins.includes("*") || origins.includes(origin)) {
+                    return origin;
+                }
+                return origins[0];
             }
-            
-            c.res.headers.set("Access-Control-Max-Age", String(maxAge));
-            
-            return new Response(null, { status: 204, headers: c.res.headers });
+            if (origins.includes("*") || (origin && origins.includes(origin))) {
+                return origins.includes("*") ? "*" : origin;
+            }
+            return origins[0];
+        })();
+
+        if (c.req.method === "OPTIONS") {
+            const responseHeaders = new Headers();
+            responseHeaders.set("Access-Control-Allow-Origin", allowOrigin || "*");
+            responseHeaders.set("Access-Control-Allow-Methods", methods.join(", "));
+            responseHeaders.set("Access-Control-Allow-Headers", headers.join(", "));
+
+            if (credentials) {
+                responseHeaders.set("Access-Control-Allow-Credentials", "true");
+            }
+
+            responseHeaders.set("Access-Control-Max-Age", String(maxAge));
+
+            return new Response(null, { status: 204, headers: responseHeaders });
         }
 
         await next();
 
-        const allowOrigin = origins.includes("*") || (origin && origins.includes(origin))
-            ? (origins.includes("*") ? "*" : origin)
-            : origins[0];
-
         if (allowOrigin) {
             c.res.headers.set("Access-Control-Allow-Origin", allowOrigin);
         }
-        
+
         c.res.headers.set("Access-Control-Allow-Methods", methods.join(", "));
         c.res.headers.set("Access-Control-Allow-Headers", headers.join(", "));
         

@@ -42,11 +42,12 @@ export function requestLogger(): MiddlewareHandler {
         await next();
 
         const duration = Date.now() - start;
+        const queryObj = c.req.query();
         const log: RequestLog = {
             requestId,
             method: c.req.method,
             path: c.req.path,
-            query: c.req.query().toString() || undefined,
+            query: Object.keys(queryObj).length > 0 ? new URLSearchParams(queryObj).toString() : undefined,
             status: c.res.status,
             duration,
             ip: c.req.header("x-forwarded-for") || c.req.header("x-real-ip"),
