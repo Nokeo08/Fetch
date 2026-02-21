@@ -4,15 +4,22 @@ import { CREATE_TABLES, CREATE_INDEXES, SCHEMA_VERSION } from "./schema";
 type Migration = {
     version: number;
     name: string;
-    up: string;
+    up: (db: Database) => void;
     down: string;
 };
+
+function hasColumn(db: Database, table: string, column: string): boolean {
+    const result = db.query<{ name: string }[], []>(
+        `SELECT name FROM pragma_table_info('${table}') WHERE name = '${column}'`
+    ).all();
+    return result.length > 0;
+}
 
 const MIGRATIONS: Migration[] = [
     {
         version: 1,
         name: "initial_schema",
-        up: "",
+        up: () => {},
         down: `
             DROP INDEX IF EXISTS idx_sections_list_id;
             DROP INDEX IF EXISTS idx_items_section_id;
@@ -28,6 +35,18 @@ const MIGRATIONS: Migration[] = [
             DROP TABLE IF EXISTS lists;
             DROP TABLE IF EXISTS sessions;
             DROP TABLE IF EXISTS schema_version;
+        `,
+    },
+    {
+        version: 2,
+        name: "add_session_last_activity",
+        up: (db: Database) => {
+            if (!hasColumn(db, "sessions", "last_activity")) {
+                db.exec("ALTER TABLE sessions ADD COLUMN last_activity DATETIME DEFAULT CURRENT_TIMESTAMP");
+            }
+        },
+        down: `
+            ALTER TABLE sessions DROP COLUMN last_activity;
         `,
     },
 ];
@@ -52,7 +71,7 @@ export function runMigrations(db: Database): void {
             for (let v = currentVersion + 1; v <= SCHEMA_VERSION; v++) {
                 const migration = MIGRATIONS.find((m) => m.version === v);
                 if (migration && migration.up) {
-                    db.exec(migration.up);
+                    migration.up(db);
                 }
                 recordMigration(db, v);
             }

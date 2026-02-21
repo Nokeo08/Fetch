@@ -4,12 +4,14 @@ type DbSession = {
     token: string;
     created_at: string;
     expires_at: string;
+    last_activity: string | null;
 };
 
 export type Session = {
     token: string;
     createdAt: string;
     expiresAt: string;
+    lastActivity: string | null;
 };
 
 function mapSession(row: DbSession): Session {
@@ -17,6 +19,7 @@ function mapSession(row: DbSession): Session {
         token: row.token,
         createdAt: row.created_at,
         expiresAt: row.expires_at,
+        lastActivity: row.last_activity,
     };
 }
 
@@ -32,13 +35,14 @@ export function createSessionsService(db: Database) {
             const expiresAt = new Date(now.getTime() + expiresInMs);
 
             db.query(
-                "INSERT INTO sessions (token, created_at, expires_at) VALUES (?, ?, ?)"
-            ).run(token, formatDateForSqlite(now), formatDateForSqlite(expiresAt));
+                "INSERT INTO sessions (token, created_at, expires_at, last_activity) VALUES (?, ?, ?, ?)"
+            ).run(token, formatDateForSqlite(now), formatDateForSqlite(expiresAt), formatDateForSqlite(now));
 
             return {
                 token,
                 createdAt: now.toISOString(),
                 expiresAt: expiresAt.toISOString(),
+                lastActivity: now.toISOString(),
             };
         },
 
@@ -69,8 +73,23 @@ export function createSessionsService(db: Database) {
             const session = this.getByToken(token);
             if (!session) return null;
 
-            const expiresAt = new Date(Date.now() + expiresInMs);
-            db.query("UPDATE sessions SET expires_at = ? WHERE token = ?").run(formatDateForSqlite(expiresAt), token);
+            const now = new Date();
+            const expiresAt = new Date(now.getTime() + expiresInMs);
+            db.query("UPDATE sessions SET expires_at = ?, last_activity = ? WHERE token = ?").run(
+                formatDateForSqlite(expiresAt),
+                formatDateForSqlite(now),
+                token
+            );
+
+            return this.getByToken(token);
+        },
+
+        updateActivity(token: string): Session | null {
+            const session = this.getByToken(token);
+            if (!session) return null;
+
+            const now = new Date();
+            db.query("UPDATE sessions SET last_activity = ? WHERE token = ?").run(formatDateForSqlite(now), token);
 
             return this.getByToken(token);
         },

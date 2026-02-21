@@ -60,8 +60,8 @@ describe("Database Schema", () => {
             runMigrations(db);
 
             const migrations = getAppliedMigrations(db);
-            expect(migrations).toHaveLength(1);
-            expect(migrations[0].version).toBe(SCHEMA_VERSION);
+            expect(migrations).toHaveLength(SCHEMA_VERSION);
+            expect(migrations[migrations.length - 1].version).toBe(SCHEMA_VERSION);
         });
     });
 
@@ -170,13 +170,13 @@ describe("Database Schema", () => {
             runMigrations(db);
 
             const versionBefore = getAppliedMigrations(db);
-            expect(versionBefore[0].version).toBe(SCHEMA_VERSION);
+            expect(versionBefore[versionBefore.length - 1].version).toBe(SCHEMA_VERSION);
 
             const rolledBack = rollbackMigration(db);
             expect(rolledBack).toBe(SCHEMA_VERSION);
 
             const migrations = getAppliedMigrations(db);
-            expect(migrations).toHaveLength(0);
+            expect(migrations).toHaveLength(SCHEMA_VERSION - 1);
         });
 
         test("should return null when no migrations to rollback", () => {
@@ -192,7 +192,7 @@ describe("Database Schema", () => {
             runMigrations(db);
 
             const migrations = getAppliedMigrations(db);
-            expect(migrations).toHaveLength(1);
+            expect(migrations).toHaveLength(SCHEMA_VERSION);
         });
     });
 });

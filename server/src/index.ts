@@ -6,8 +6,25 @@ import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import { createDatabase, runMigrations, cleanupExpiredSessions, cleanupExpiredRateLimits, closeDatabase } from "./db";
 import { getConfig, validateConfig } from "./config";
-import { createListsService, createSectionsService, createItemsService } from "./services";
-import { errorHandler, notFoundHandler, requestLogger, securityHeaders, corsHeaders } from "./middleware";
+import {
+    createListsService,
+    createSectionsService,
+    createItemsService,
+    createSessionsService,
+    createRateLimitsService,
+} from "./services";
+import {
+    errorHandler,
+    notFoundHandler,
+    requestLogger,
+    securityHeaders,
+    corsHeaders,
+    requireAuth,
+    createSessionCookie,
+    clearSessionCookie,
+    constantTimeEquals,
+    type AuthVariables,
+} from "./middleware";
 import type { ApiResponse, ItemStatus } from "shared/dist";
 import type { Database } from "bun:sqlite";
 
@@ -35,11 +52,13 @@ cleanupExpiredRateLimits(db);
 const listsService = createListsService(db);
 const sectionsService = createSectionsService(db);
 const itemsService = createItemsService(db);
+const sessionsService = createSessionsService(db);
+const rateLimitsService = createRateLimitsService(db, config.rateLimit);
 
 export type AppVariables = {
     requestId: string;
     db: Database;
-};
+} & AuthVariables;
 
 export function checkDatabaseHealth(db: Database): { status: string; latency?: number } {
     try {
@@ -87,16 +106,90 @@ export const app = new Hono<{ Variables: AppVariables }>()
         return c.json(data, { status: 200 });
     })
 
-    .route("/api/v1", createApiRoutes(listsService, sectionsService, itemsService))
+    .post("/api/login", async (c) => {
+        if (config.auth.disabled) {
+            return c.json<ApiResponse>({ success: true, data: { message: "Authentication disabled" } });
+        }
+
+        const ip = c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
+            c.req.header("x-real-ip") ||
+            "unknown";
+
+        if (rateLimitsService.isLocked(ip)) {
+            const remaining = rateLimitsService.getLockoutRemaining(ip);
+            return c.json<ApiResponse>(
+                {
+                    success: false,
+                    error: `Too many failed attempts. Try again in ${Math.ceil(remaining / 60000)} minutes.`,
+                },
+                429
+            );
+        }
+
+        let body: { password?: string };
+        try {
+            body = await c.req.json<{ password?: string }>();
+        } catch {
+            return c.json<ApiResponse>({ success: false, error: "Invalid request body" }, 400);
+        }
+
+        const { password } = body;
+
+        if (!password || typeof password !== "string") {
+            rateLimitsService.recordAttempt(ip);
+            return c.json<ApiResponse>({ success: false, error: "Password is required" }, 400);
+        }
+
+        if (!constantTimeEquals(password, config.auth.password)) {
+            rateLimitsService.recordAttempt(ip);
+            const remaining = rateLimitsService.getRemainingAttempts(ip);
+            return c.json<ApiResponse>(
+                { success: false, error: `Invalid password. ${remaining} attempts remaining.` },
+                401
+            );
+        }
+
+        rateLimitsService.resetOnSuccess(ip);
+
+        const session = sessionsService.create(config.session.maxAge);
+        createSessionCookie(c, session.token, config);
+
+        return c.json<ApiResponse>({ success: true, data: { message: "Logged in successfully" } });
+    })
+
+    .post("/api/logout", (c) => {
+        const sessionToken = c.get("session")?.token;
+
+        if (sessionToken) {
+            sessionsService.delete(sessionToken);
+        }
+
+        clearSessionCookie(c);
+
+        return c.json<ApiResponse>({ success: true, data: { message: "Logged out successfully" } });
+    })
+
+    .get("/api/me", requireAuth(sessionsService, config), (c) => {
+        return c.json<ApiResponse>({
+            success: true,
+            data: { authenticated: true },
+        });
+    })
+
+    .route("/api/v1", createApiRoutes(listsService, sectionsService, itemsService, sessionsService, config))
 
     .notFound(notFoundHandler);
 
 function createApiRoutes(
     listsService: ReturnType<typeof createListsService>,
     sectionsService: ReturnType<typeof createSectionsService>,
-    itemsService: ReturnType<typeof createItemsService>
+    itemsService: ReturnType<typeof createItemsService>,
+    sessionsService: ReturnType<typeof createSessionsService>,
+    config: ReturnType<typeof getConfig>
 ) {
     return new Hono<{ Variables: AppVariables }>()
+        .use("*", requireAuth(sessionsService, config))
+
         .get("/lists", (c) => {
             const lists = listsService.getAll();
             return c.json<ApiResponse>({ success: true, data: lists });

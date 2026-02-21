@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const CREATE_TABLES = `
 -- Schema version tracking
@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS schema_version (
 CREATE TABLE IF NOT EXISTS sessions (
     token TEXT PRIMARY KEY,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    expires_at DATETIME NOT NULL
+    expires_at DATETIME NOT NULL,
+    last_activity DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Shopping Lists
