@@ -1,0 +1,46 @@
+{
+  "name": "fetch",
+  "version": "0.1.0",
+  "description": "A self-hosted shopping list PWA with real-time sync",
+  "author": "Fetch Team",
+  "license": "MIT",
+  "packageManager": "bun@1.2.4",
+  "workspaces": [
+    "./server",
+    "./client",
+    "./shared"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "dev:client": "turbo dev --filter=client",
+    "dev:server": "turbo dev --filter=server",
+    "build": "turbo build",
+    "build:client": "turbo build --filter=client",
+    "build:server": "turbo build --filter=server",
+    "lint": "turbo lint",
+    "type-check": "turbo type-check",
+    "test": "turbo test",
+    "postinstall": "turbo build --filter=shared --filter=server"
+  },
+  "keywords": [
+    "shopping-list",
+    "pwa",
+    "self-hosted",
+    "bun",
+    "hono",
+    "react",
+    "vite",
+    "monorepo",
+    "turbo"
+  ],
+  "devDependencies": {
+    "bun-types": "latest",
+    "turbo": "^2.6.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "hono": "^4.11.9"
+  }
+}
