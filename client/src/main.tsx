@@ -6,6 +6,8 @@ import "./index.css";
 import App from "./App.tsx";
 import Login from "./Login.tsx";
 import ListDetail from "./ListDetail.tsx";
+import Templates from "./Templates.tsx";
+import TemplateDetail from "./TemplateDetail.tsx";
 import { AuthProvider, useAuth } from "./AuthContext.tsx";
 
 const queryClient = new QueryClient();
@@ -52,6 +54,22 @@ function AppRoutes() {
                 element={
                     <ProtectedRoute>
                         <ListDetail />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/templates"
+                element={
+                    <ProtectedRoute>
+                        <Templates />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/templates/:id"
+                element={
+                    <ProtectedRoute>
+                        <TemplateDetail />
                     </ProtectedRoute>
                 }
             />

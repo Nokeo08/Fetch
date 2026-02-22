@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import type { Template, TemplateItem } from "shared/dist";
+import type { Template, TemplateItem, Section, Item } from "shared/dist";
 
 type DbTemplate = {
     id: number;
@@ -39,6 +39,20 @@ function mapTemplateItem(row: DbTemplateItem): TemplateItem {
 
 export type TemplateWithItems = Template & {
     items: TemplateItem[];
+};
+
+export type ApplyTemplateResult = {
+    added: number;
+    skipped: string[];
+};
+
+export type SectionWithItems = Section & {
+    items: Item[];
+};
+
+export type CreateTemplateFromListOptions = {
+    name: string;
+    sectionIds?: number[];
 };
 
 export function createTemplatesService(db: Database) {
@@ -170,6 +184,97 @@ export function createTemplatesService(db: Database) {
         getItemCount(templateId: number): number {
             const result = db.query<{ count: number }, [number]>("SELECT COUNT(*) as count FROM template_items WHERE template_id = ?").get(templateId);
             return result?.count ?? 0;
+        },
+
+        applyToList(
+            templateId: number,
+            listSections: SectionWithItems[],
+            createSection: (name: string) => Section,
+            createItem: (sectionId: number, name: string, description?: string, quantity?: string) => Item,
+            selectedItemIds?: number[]
+        ): ApplyTemplateResult {
+            const template = this.getByIdWithItems(templateId);
+            if (!template) {
+                throw new Error("Template not found");
+            }
+
+            const itemsToApply = selectedItemIds
+                ? template.items.filter((item) => selectedItemIds.includes(item.id))
+                : template.items;
+
+            const allItems = listSections.flatMap((s) => s.items);
+            const existingItemNames = new Set(allItems.map((i) => i.name.toLowerCase()));
+
+            const added: string[] = [];
+            const skipped: string[] = [];
+            const sectionCache = new Map<string, Section>();
+
+            for (const section of listSections) {
+                sectionCache.set(section.name.toLowerCase(), section);
+            }
+
+            for (const templateItem of itemsToApply) {
+                if (existingItemNames.has(templateItem.name.toLowerCase())) {
+                    skipped.push(templateItem.name);
+                    continue;
+                }
+
+                let targetSection: Section;
+
+                if (templateItem.sectionName) {
+                    const cachedSection = sectionCache.get(templateItem.sectionName.toLowerCase());
+                    if (cachedSection) {
+                        targetSection = cachedSection;
+                    } else {
+                        targetSection = createSection(templateItem.sectionName);
+                        sectionCache.set(templateItem.sectionName.toLowerCase(), targetSection);
+                    }
+                } else {
+                    if (listSections.length === 0) {
+                        targetSection = createSection("Items");
+                        listSections.push({ ...targetSection, items: [] });
+                        sectionCache.set("items", targetSection);
+                    } else {
+                        const firstSection = listSections[0];
+                        if (!firstSection) {
+                            targetSection = createSection("Items");
+                            listSections.push({ ...targetSection, items: [] });
+                        } else {
+                            targetSection = firstSection;
+                        }
+                    }
+                }
+
+                const newItem = createItem(
+                    targetSection.id,
+                    templateItem.name,
+                    templateItem.description ?? undefined,
+                    templateItem.quantity ?? undefined
+                );
+                added.push(templateItem.name);
+                existingItemNames.add(templateItem.name.toLowerCase());
+            }
+
+            return { added: added.length, skipped };
+        },
+
+        createFromSections(
+            name: string,
+            sections: SectionWithItems[]
+        ): TemplateWithItems {
+            const template = this.create(name);
+
+            for (const section of sections) {
+                for (const item of section.items) {
+                    this.addItem(template.id, item.name, {
+                        description: item.description ?? undefined,
+                        quantity: item.quantity ?? undefined,
+                        sectionName: section.name,
+                    });
+                }
+            }
+
+            return this.getByIdWithItems(template.id)!;
         },
     };
 }

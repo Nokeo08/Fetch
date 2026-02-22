@@ -12,6 +12,7 @@ import {
     createItemsService,
     createSessionsService,
     createRateLimitsService,
+    createTemplatesService,
 } from "./services";
 import {
     errorHandler,
@@ -54,6 +55,7 @@ const sectionsService = createSectionsService(db);
 const itemsService = createItemsService(db);
 const sessionsService = createSessionsService(db);
 const rateLimitsService = createRateLimitsService(db, config.rateLimit);
+const templatesService = createTemplatesService(db);
 
 export type AppVariables = {
     requestId: string;
@@ -429,6 +431,173 @@ function createApiRoutes(
             const limit = parseInt(c.req.query("limit") || "5", 10);
             const results = itemsService.searchHistory(query, limit);
             return c.json<ApiResponse>({ success: true, data: results });
+        })
+
+    // Template routes
+    const templates = app
+        .use("/api/v1/templates/*", requireAuth(sessionsService, config))
+        .get("/api/v1/templates", (c) => {
+            const templates = templatesService.getAllWithItems();
+            return c.json<ApiResponse>({ success: true, data: templates });
+        })
+
+        .post("/api/v1/templates", async (c) => {
+            const body = await c.req.json<{ name: string }>();
+            if (!body.name?.trim() || body.name.length > 100) {
+                return c.json<ApiResponse>({ success: false, error: "Name must be 1-100 characters" }, 400);
+            }
+            const template = templatesService.create(body.name.trim());
+            return c.json<ApiResponse>({ success: true, data: template }, 201);
+        })
+
+        .get("/api/v1/templates/:id", (c) => {
+            const id = parseId(c.req.param("id"));
+            if (id === null) {
+                return c.json<ApiResponse>({ success: false, error: "Invalid template ID" }, 400);
+            }
+            const template = templatesService.getByIdWithItems(id);
+            if (!template) {
+                return c.json<ApiResponse>({ success: false, error: "Template not found" }, 404);
+            }
+            return c.json<ApiResponse>({ success: true, data: template });
+        })
+
+        .put("/api/v1/templates/:id", async (c) => {
+            const id = parseId(c.req.param("id"));
+            if (id === null) {
+                return c.json<ApiResponse>({ success: false, error: "Invalid template ID" }, 400);
+            }
+            const body = await c.req.json<{ name: string }>();
+            if (!body.name?.trim() || body.name.length > 100) {
+                return c.json<ApiResponse>({ success: false, error: "Name must be 1-100 characters" }, 400);
+            }
+            const template = templatesService.update(id, body.name.trim());
+            if (!template) {
+                return c.json<ApiResponse>({ success: false, error: "Template not found" }, 404);
+            }
+            return c.json<ApiResponse>({ success: true, data: template });
+        })
+
+        .delete("/api/v1/templates/:id", (c) => {
+            const id = parseId(c.req.param("id"));
+            if (id === null) {
+                return c.json<ApiResponse>({ success: false, error: "Invalid template ID" }, 400);
+            }
+            const deleted = templatesService.delete(id);
+            if (!deleted) {
+                return c.json<ApiResponse>({ success: false, error: "Template not found" }, 404);
+            }
+            return c.json<ApiResponse>({ success: true });
+        })
+
+        .post("/api/v1/templates/:id/items", async (c) => {
+            const id = parseId(c.req.param("id"));
+            if (id === null) {
+                return c.json<ApiResponse>({ success: false, error: "Invalid template ID" }, 400);
+            }
+            const body = await c.req.json<{ name: string; description?: string; quantity?: string; sectionName?: string }>();
+            if (!body.name?.trim() || body.name.length > 200) {
+                return c.json<ApiResponse>({ success: false, error: "Name must be 1-200 characters" }, 400);
+            }
+            const template = templatesService.getById(id);
+            if (!template) {
+                return c.json<ApiResponse>({ success: false, error: "Template not found" }, 404);
+            }
+            const item = templatesService.addItem(id, body.name.trim(), {
+                description: body.description,
+                quantity: body.quantity,
+                sectionName: body.sectionName,
+            });
+            return c.json<ApiResponse>({ success: true, data: item }, 201);
+        })
+
+        .put("/api/v1/templates/:templateId/items/:itemId", async (c) => {
+            const templateId = parseId(c.req.param("templateId"));
+            const itemId = parseId(c.req.param("itemId"));
+            if (templateId === null || itemId === null) {
+                return c.json<ApiResponse>({ success: false, error: "Invalid ID" }, 400);
+            }
+            const body = await c.req.json<{ name?: string; description?: string | null; quantity?: string | null; sectionName?: string | null }>();
+            const item = templatesService.updateItem(itemId, body);
+            if (!item) {
+                return c.json<ApiResponse>({ success: false, error: "Item not found" }, 404);
+            }
+            return c.json<ApiResponse>({ success: true, data: item });
+        })
+
+        .delete("/api/v1/templates/:templateId/items/:itemId", (c) => {
+            const templateId = parseId(c.req.param("templateId"));
+            const itemId = parseId(c.req.param("itemId"));
+            if (templateId === null || itemId === null) {
+                return c.json<ApiResponse>({ success: false, error: "Invalid ID" }, 400);
+            }
+            const deleted = templatesService.deleteItem(itemId);
+            if (!deleted) {
+                return c.json<ApiResponse>({ success: false, error: "Item not found" }, 404);
+            }
+            return c.json<ApiResponse>({ success: true });
+        })
+
+        .post("/api/v1/templates/:id/reorder", async (c) => {
+            const id = parseId(c.req.param("id"));
+            if (id === null) {
+                return c.json<ApiResponse>({ success: false, error: "Invalid template ID" }, 400);
+            }
+            const body = await c.req.json<{ ids: number[] }>();
+            templatesService.reorderItems(id, body.ids);
+            return c.json<ApiResponse>({ success: true });
+        })
+
+        .post("/api/v1/templates/:id/apply", async (c) => {
+            const id = parseId(c.req.param("id"));
+            if (id === null) {
+                return c.json<ApiResponse>({ success: false, error: "Invalid template ID" }, 400);
+            }
+            const body = await c.req.json<{ listId: number; itemIds?: number[] }>();
+            if (!body.listId) {
+                return c.json<ApiResponse>({ success: false, error: "List ID is required" }, 400);
+            }
+
+            const list = listsService.getById(body.listId);
+            if (!list) {
+                return c.json<ApiResponse>({ success: false, error: "List not found" }, 404);
+            }
+
+            const sections = sectionsService.getByListIdWithItems(body.listId);
+
+            const result = templatesService.applyToList(
+                id,
+                sections,
+                (name) => sectionsService.create(body.listId, name),
+                (sectionId, name, description, quantity) => itemsService.create(sectionId, name, description, quantity),
+                body.itemIds
+            );
+
+            return c.json<ApiResponse>({ success: true, data: result });
+        })
+
+        .post("/api/v1/lists/:id/template", async (c) => {
+            const id = parseId(c.req.param("id"));
+            if (id === null) {
+                return c.json<ApiResponse>({ success: false, error: "Invalid list ID" }, 400);
+            }
+            const body = await c.req.json<{ name: string; sectionIds?: number[] }>();
+            if (!body.name?.trim() || body.name.length > 100) {
+                return c.json<ApiResponse>({ success: false, error: "Name must be 1-100 characters" }, 400);
+            }
+
+            const list = listsService.getById(id);
+            if (!list) {
+                return c.json<ApiResponse>({ success: false, error: "List not found" }, 404);
+            }
+
+            let sections = sectionsService.getByListIdWithItems(id);
+            if (body.sectionIds) {
+                sections = sections.filter((s) => body.sectionIds!.includes(s.id));
+            }
+
+            const template = templatesService.createFromSections(body.name.trim(), sections);
+            return c.json<ApiResponse>({ success: true, data: template }, 201);
         });
 }
 

@@ -19,6 +19,26 @@
     color: rgba(255, 255, 255, 0.87);
 }
 
+.header-nav {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.nav-btn {
+    padding: 0.5rem 1rem;
+    background: #333;
+    color: rgba(255, 255, 255, 0.87);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+}
+
+.nav-btn:hover {
+    background: #444;
+}
+
 .logout-btn {
     padding: 0.5rem 1rem;
     background: #333;

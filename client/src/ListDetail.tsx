@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { listsApi, type ListWithCounts } from "./api/lists";
 import { sectionsApi, itemsApi, type SectionWithItems, type Item } from "./api/sections";
+import { templatesApi, type TemplateWithItems } from "./api/templates";
 import "./ListDetail.css";
 
 type Toast = {
@@ -52,10 +53,19 @@ export default function ListDetail() {
     const [showClearCompletedModal, setShowClearCompletedModal] = useState(false);
     const [clearingSection, setClearingSection] = useState<SectionWithItems | null>(null);
 
+    const [showApplyTemplateModal, setShowApplyTemplateModal] = useState(false);
+    const [showSaveAsTemplateModal, setShowSaveAsTemplateModal] = useState(false);
+    const [availableTemplates, setAvailableTemplates] = useState<TemplateWithItems[]>([]);
+    const [selectedTemplate, setSelectedTemplate] = useState<TemplateWithItems | null>(null);
+    const [selectedItemIds, setSelectedItemIds] = useState<Set<number>>(new Set());
+    const [templateName, setTemplateName] = useState("");
+
     const deleteSectionModalRef = useRef<HTMLDivElement>(null);
     const deleteItemModalRef = useRef<HTMLDivElement>(null);
     const clearCompletedModalRef = useRef<HTMLDivElement>(null);
     const editItemModalRef = useRef<HTMLDivElement>(null);
+    const applyTemplateModalRef = useRef<HTMLDivElement>(null);
+    const saveAsTemplateModalRef = useRef<HTMLDivElement>(null);
 
     const showToast = useCallback((message: string, type: "success" | "error" = "success") => {
         setToast({ message, type });
@@ -85,6 +95,18 @@ export default function ListDetail() {
             editItemModalRef.current.focus();
         }
     }, [showEditItemModal]);
+
+    useEffect(() => {
+        if (showApplyTemplateModal && applyTemplateModalRef.current) {
+            applyTemplateModalRef.current.focus();
+        }
+    }, [showApplyTemplateModal]);
+
+    useEffect(() => {
+        if (showSaveAsTemplateModal && saveAsTemplateModalRef.current) {
+            saveAsTemplateModalRef.current.focus();
+        }
+    }, [showSaveAsTemplateModal]);
 
     const fetchData = useCallback(async () => {
         if (!listId) return;
@@ -507,6 +529,91 @@ export default function ListDetail() {
         }
     };
 
+    const openApplyTemplateModal = async () => {
+        try {
+            const res = await templatesApi.getAll();
+            if (res.success && res.data) {
+                setAvailableTemplates(res.data);
+                setSelectedTemplate(null);
+                setSelectedItemIds(new Set());
+                setShowApplyTemplateModal(true);
+            }
+        } catch {
+            showToast("Failed to load templates", "error");
+        }
+    };
+
+    const handleSelectTemplate = (template: TemplateWithItems) => {
+        setSelectedTemplate(template);
+        setSelectedItemIds(new Set(template.items.map((i) => i.id)));
+    };
+
+    const handleToggleTemplateItem = (itemId: number) => {
+        setSelectedItemIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(itemId)) {
+                next.delete(itemId);
+            } else {
+                next.add(itemId);
+            }
+            return next;
+        });
+    };
+
+    const handleApplyTemplate = async () => {
+        if (!selectedTemplate || !listId || selectedItemIds.size === 0) return;
+
+        setIsSubmitting(true);
+        try {
+            const res = await templatesApi.applyToList(
+                selectedTemplate.id,
+                listId,
+                Array.from(selectedItemIds)
+            );
+            if (res.success && res.data) {
+                setShowApplyTemplateModal(false);
+                setSelectedTemplate(null);
+                fetchData();
+                const { added, skipped } = res.data;
+                if (skipped.length > 0) {
+                    showToast(`Added ${added} items, skipped ${skipped.length} duplicates`);
+                } else {
+                    showToast(`Added ${added} items`);
+                }
+            } else {
+                showToast(res.error || "Failed to apply template", "error");
+            }
+        } catch {
+            showToast("Failed to apply template", "error");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const openSaveAsTemplateModal = () => {
+        setTemplateName(list ? `${list.name} Template` : "");
+        setShowSaveAsTemplateModal(true);
+    };
+
+    const handleSaveAsTemplate = async () => {
+        if (!listId || !templateName.trim()) return;
+
+        setIsSubmitting(true);
+        try {
+            const res = await templatesApi.createFromList(listId, templateName.trim());
+            if (res.success && res.data) {
+                setShowSaveAsTemplateModal(false);
+                showToast(`Template "${res.data.name}" created with ${res.data.items.length} items`);
+            } else {
+                showToast(res.error || "Failed to create template", "error");
+            }
+        } catch {
+            showToast("Failed to create template", "error");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     if (isLoading) {
         return <div className="loading">Loading...</div>;
     }
@@ -525,9 +632,17 @@ export default function ListDetail() {
                     <span className="list-title-icon">{list.icon}</span>
                     <h1>{list.name}</h1>
                 </div>
-                <button className="add-section-btn" onClick={openSectionModal}>
-                    + Add Section
-                </button>
+                <div className="header-actions">
+                    <button className="template-btn" onClick={openApplyTemplateModal}>
+                        Apply Template
+                    </button>
+                    <button className="template-btn secondary" onClick={openSaveAsTemplateModal}>
+                        Save as Template
+                    </button>
+                    <button className="add-section-btn" onClick={openSectionModal}>
+                        + Add Section
+                    </button>
+                </div>
             </div>
 
             {sections.length === 0 ? (
@@ -1021,6 +1136,128 @@ export default function ListDetail() {
                                 disabled={isSubmitting}
                             >
                                 {isSubmitting ? "Clearing..." : "Clear"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showApplyTemplateModal && (
+                <div className="modal-overlay" onClick={() => setShowApplyTemplateModal(false)}>
+                    <div
+                        ref={applyTemplateModalRef}
+                        className="modal apply-template-modal"
+                        tabIndex={-1}
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                            if (e.key === "Escape") {
+                                setShowApplyTemplateModal(false);
+                            }
+                        }}
+                    >
+                        <h2>Apply Template</h2>
+                        {!selectedTemplate ? (
+                            <>
+                                {availableTemplates.length === 0 ? (
+                                    <p className="no-templates">No templates available. Create a template first.</p>
+                                ) : (
+                                    <div className="template-list">
+                                        {availableTemplates.map((template) => (
+                                            <button
+                                                key={template.id}
+                                                className="template-option"
+                                                onClick={() => handleSelectTemplate(template)}
+                                            >
+                                                <span className="template-option-name">{template.name}</span>
+                                                <span className="template-option-count">{template.items.length} items</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                <p className="selected-template-name">
+                                    Template: <strong>{selectedTemplate.name}</strong>
+                                </p>
+                                <p className="select-items-hint">Select items to add:</p>
+                                <div className="template-items-list">
+                                    {selectedTemplate.items.map((item) => (
+                                        <label key={item.id} className="template-item-checkbox">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedItemIds.has(item.id)}
+                                                onChange={() => handleToggleTemplateItem(item.id)}
+                                            />
+                                            <span className="template-item-name">{item.name}</span>
+                                            {item.sectionName && (
+                                                <span className="template-item-section">{item.sectionName}</span>
+                                            )}
+                                        </label>
+                                    ))}
+                                </div>
+                                <div className="modal-actions">
+                                    <button className="cancel-btn" onClick={() => setSelectedTemplate(null)}>
+                                        Back
+                                    </button>
+                                    <button
+                                        className="submit-btn"
+                                        onClick={handleApplyTemplate}
+                                        disabled={selectedItemIds.size === 0 || isSubmitting}
+                                    >
+                                        {isSubmitting ? "Adding..." : `Add ${selectedItemIds.size} Items`}
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {showSaveAsTemplateModal && (
+                <div className="modal-overlay" onClick={() => setShowSaveAsTemplateModal(false)}>
+                    <div
+                        ref={saveAsTemplateModalRef}
+                        className="modal"
+                        tabIndex={-1}
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" && templateName.trim() && !isSubmitting) {
+                                handleSaveAsTemplate();
+                            }
+                            if (e.key === "Escape") {
+                                setShowSaveAsTemplateModal(false);
+                            }
+                        }}
+                    >
+                        <h2>Save as Template</h2>
+                        <p className="modal-description">
+                            Create a template from this list with {sections.reduce((acc, s) => acc + s.items.length, 0)} items.
+                        </p>
+                        <div className="modal-form">
+                            <div className="form-group">
+                                <label htmlFor="template-name">Template Name</label>
+                                <input
+                                    id="template-name"
+                                    type="text"
+                                    value={templateName}
+                                    onChange={(e) => setTemplateName(e.target.value)}
+                                    placeholder="e.g., Weekly Groceries"
+                                    maxLength={100}
+                                    autoFocus
+                                />
+                            </div>
+                        </div>
+                        <div className="modal-actions">
+                            <button className="cancel-btn" onClick={() => setShowSaveAsTemplateModal(false)}>
+                                Cancel
+                            </button>
+                            <button
+                                className="submit-btn"
+                                onClick={handleSaveAsTemplate}
+                                disabled={!templateName.trim() || isSubmitting}
+                            >
+                                {isSubmitting ? "Saving..." : "Save Template"}
                             </button>
                         </div>
                     </div>
