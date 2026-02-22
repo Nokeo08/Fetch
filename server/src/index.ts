@@ -433,15 +433,13 @@ function createApiRoutes(
             return c.json<ApiResponse>({ success: true, data: results });
         })
 
-    // Template routes
-    const templates = app
-        .use("/api/v1/templates/*", requireAuth(sessionsService, config))
-        .get("/api/v1/templates", (c) => {
+        // Template routes
+        .get("/templates", (c) => {
             const templates = templatesService.getAllWithItems();
             return c.json<ApiResponse>({ success: true, data: templates });
         })
 
-        .post("/api/v1/templates", async (c) => {
+        .post("/templates", async (c) => {
             const body = await c.req.json<{ name: string }>();
             if (!body.name?.trim() || body.name.length > 100) {
                 return c.json<ApiResponse>({ success: false, error: "Name must be 1-100 characters" }, 400);
@@ -450,7 +448,7 @@ function createApiRoutes(
             return c.json<ApiResponse>({ success: true, data: template }, 201);
         })
 
-        .get("/api/v1/templates/:id", (c) => {
+        .get("/templates/:id", (c) => {
             const id = parseId(c.req.param("id"));
             if (id === null) {
                 return c.json<ApiResponse>({ success: false, error: "Invalid template ID" }, 400);
@@ -462,7 +460,7 @@ function createApiRoutes(
             return c.json<ApiResponse>({ success: true, data: template });
         })
 
-        .put("/api/v1/templates/:id", async (c) => {
+        .put("/templates/:id", async (c) => {
             const id = parseId(c.req.param("id"));
             if (id === null) {
                 return c.json<ApiResponse>({ success: false, error: "Invalid template ID" }, 400);
@@ -478,7 +476,7 @@ function createApiRoutes(
             return c.json<ApiResponse>({ success: true, data: template });
         })
 
-        .delete("/api/v1/templates/:id", (c) => {
+        .delete("/templates/:id", (c) => {
             const id = parseId(c.req.param("id"));
             if (id === null) {
                 return c.json<ApiResponse>({ success: false, error: "Invalid template ID" }, 400);
@@ -490,7 +488,7 @@ function createApiRoutes(
             return c.json<ApiResponse>({ success: true });
         })
 
-        .post("/api/v1/templates/:id/items", async (c) => {
+        .post("/templates/:id/items", async (c) => {
             const id = parseId(c.req.param("id"));
             if (id === null) {
                 return c.json<ApiResponse>({ success: false, error: "Invalid template ID" }, 400);
@@ -511,7 +509,7 @@ function createApiRoutes(
             return c.json<ApiResponse>({ success: true, data: item }, 201);
         })
 
-        .put("/api/v1/templates/:templateId/items/:itemId", async (c) => {
+        .put("/templates/:templateId/items/:itemId", async (c) => {
             const templateId = parseId(c.req.param("templateId"));
             const itemId = parseId(c.req.param("itemId"));
             if (templateId === null || itemId === null) {
@@ -525,7 +523,7 @@ function createApiRoutes(
             return c.json<ApiResponse>({ success: true, data: item });
         })
 
-        .delete("/api/v1/templates/:templateId/items/:itemId", (c) => {
+        .delete("/templates/:templateId/items/:itemId", (c) => {
             const templateId = parseId(c.req.param("templateId"));
             const itemId = parseId(c.req.param("itemId"));
             if (templateId === null || itemId === null) {
@@ -538,7 +536,7 @@ function createApiRoutes(
             return c.json<ApiResponse>({ success: true });
         })
 
-        .post("/api/v1/templates/:id/reorder", async (c) => {
+        .post("/templates/:id/reorder", async (c) => {
             const id = parseId(c.req.param("id"));
             if (id === null) {
                 return c.json<ApiResponse>({ success: false, error: "Invalid template ID" }, 400);
@@ -548,7 +546,7 @@ function createApiRoutes(
             return c.json<ApiResponse>({ success: true });
         })
 
-        .post("/api/v1/templates/:id/apply", async (c) => {
+        .post("/templates/:id/apply", async (c) => {
             const id = parseId(c.req.param("id"));
             if (id === null) {
                 return c.json<ApiResponse>({ success: false, error: "Invalid template ID" }, 400);
@@ -576,7 +574,7 @@ function createApiRoutes(
             return c.json<ApiResponse>({ success: true, data: result });
         })
 
-        .post("/api/v1/lists/:id/template", async (c) => {
+        .post("/lists/:id/template", async (c) => {
             const id = parseId(c.req.param("id"));
             if (id === null) {
                 return c.json<ApiResponse>({ success: false, error: "Invalid list ID" }, 400);
