@@ -63,7 +63,14 @@ export function createSectionsService(db: Database) {
         getItems(sectionId: number): Item[] {
             const rows = db
                 .query<DbItem, [number]>(
-                    "SELECT * FROM items WHERE section_id = ? ORDER BY sort_order ASC, created_at ASC"
+                    `SELECT * FROM items WHERE section_id = ?
+                     ORDER BY
+                       CASE status
+                         WHEN 'completed' THEN 1
+                         ELSE 0
+                       END,
+                       sort_order ASC,
+                       created_at ASC`
                 )
                 .all(sectionId);
             return rows.map(mapItem);

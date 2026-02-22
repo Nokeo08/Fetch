@@ -222,6 +222,21 @@
     border-color: #646cff;
 }
 
+.form-group select {
+    padding: 0.75rem 1rem;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background: #0a0a0a;
+    color: rgba(255, 255, 255, 0.87);
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.form-group select:focus {
+    outline: none;
+    border-color: #646cff;
+}
+
 .icon-picker {
     display: flex;
     flex-wrap: wrap;

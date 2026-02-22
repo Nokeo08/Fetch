@@ -2,12 +2,14 @@ import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { Database } from "bun:sqlite";
 import { createSectionsService } from "./sections";
 import { createListsService } from "./lists";
+import { createItemsService } from "./items";
 import { CREATE_TABLES, CREATE_INDEXES } from "../db/schema";
 
 describe("SectionsService", () => {
     let db: Database;
     let sectionsService: ReturnType<typeof createSectionsService>;
     let listsService: ReturnType<typeof createListsService>;
+    let itemsService: ReturnType<typeof createItemsService>;
     let testListId: number;
 
     beforeEach(() => {
@@ -16,6 +18,7 @@ describe("SectionsService", () => {
         db.exec(CREATE_INDEXES);
         sectionsService = createSectionsService(db);
         listsService = createListsService(db);
+        itemsService = createItemsService(db);
         const list = listsService.create("Test List");
         testListId = list.id;
     });
@@ -81,6 +84,36 @@ describe("SectionsService", () => {
             expect(sections[0].id).toBe(section3.id);
             expect(sections[1].id).toBe(section1.id);
             expect(sections[2].id).toBe(section2.id);
+        });
+    });
+
+    describe("getItems", () => {
+        test("should sort completed items at the bottom", () => {
+            const section = sectionsService.create(testListId, "Test Section");
+            const item1 = itemsService.create(section.id, "Active Item 1");
+            const item2 = itemsService.create(section.id, "Active Item 2");
+            const item3 = itemsService.create(section.id, "To Complete");
+
+            itemsService.update(item3.id, { status: "completed" });
+
+            const items = sectionsService.getItems(section.id);
+            expect(items[0].status).toBe("active");
+            expect(items[1].status).toBe("active");
+            expect(items[2].status).toBe("completed");
+        });
+
+        test("should sort items by sort_order within status groups", () => {
+            const section = sectionsService.create(testListId, "Test Section");
+            const item1 = itemsService.create(section.id, "Item 1");
+            const item2 = itemsService.create(section.id, "Item 2");
+            const item3 = itemsService.create(section.id, "Item 3");
+
+            itemsService.reorder([item3.id, item1.id, item2.id]);
+
+            const items = sectionsService.getItems(section.id);
+            expect(items[0].id).toBe(item3.id);
+            expect(items[1].id).toBe(item1.id);
+            expect(items[2].id).toBe(item2.id);
         });
     });
 });

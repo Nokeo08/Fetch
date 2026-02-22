@@ -134,6 +134,15 @@
     transition: background 0.2s;
 }
 
+.section-clear-btn {
+    background: #3d3d2d;
+    color: #ffd700;
+}
+
+.section-clear-btn:hover {
+    background: #4d4d3d;
+}
+
 .section-edit-btn {
     background: #333;
     color: rgba(255, 255, 255, 0.87);
@@ -208,12 +217,36 @@
     padding: 0.75rem;
     background: #0a0a0a;
     border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.2s;
+    cursor: grab;
+    transition: background 0.2s, opacity 0.2s;
 }
 
 .item-row:hover {
     background: #111;
+}
+
+.item-row.dragging {
+    opacity: 0.5;
+    transform: scale(1.02);
+}
+
+.item-row.uncertain {
+    background: rgba(255, 215, 0, 0.08);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.item-row.completed {
+    opacity: 0.6;
+}
+
+.item-drag-handle {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 1rem;
+    cursor: grab;
+}
+
+.item-drag-handle:active {
+    cursor: grabbing;
 }
 
 .item-checkbox {
@@ -221,11 +254,26 @@
     height: 20px;
     cursor: pointer;
     accent-color: #646cff;
+    flex-shrink: 0;
+    margin-right: 0.75rem;
+}
+
+.item-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.item-row-main {
+    display: flex;
+    align-items: center;
 }
 
 .item-name {
-    flex: 1;
     color: rgba(255, 255, 255, 0.87);
+    word-break: break-word;
 }
 
 .item-name.completed {
@@ -233,14 +281,23 @@
     color: rgba(255, 255, 255, 0.5);
 }
 
-.item-quantity {
+.item-quantity-inline {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.9em;
+}
+
+.item-description {
     font-size: 0.85rem;
     color: rgba(255, 255, 255, 0.5);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .item-actions {
     display: flex;
     gap: 0.25rem;
+    flex-shrink: 0;
 }
 
 .item-actions button {
@@ -248,9 +305,10 @@
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     background: transparent;
     color: rgba(255, 255, 255, 0.5);
+    transition: all 0.2s;
 }
 
 .item-actions button:hover {
@@ -258,8 +316,59 @@
     color: rgba(255, 255, 255, 0.87);
 }
 
+.item-uncertain-btn {
+    font-weight: bold;
+}
+
+.item-uncertain-btn:hover {
+    color: #ffd700 !important;
+}
+
+.item-edit-btn:hover {
+    color: #646cff;
+}
+
 .item-delete-btn:hover {
     color: #ff7d7d;
+}
+
+.completed-section {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #333;
+}
+
+.completed-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    padding: 0.25rem 0;
+    font-size: 0.9rem;
+    width: 100%;
+}
+
+.completed-section-header:hover {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.completed-collapse-btn {
+    font-size: 0.75rem;
+    transition: transform 0.2s;
+}
+
+.completed-collapse-btn.collapsed {
+    transform: rotate(-90deg);
+}
+
+.completed-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
 }
 
 .sections-empty {

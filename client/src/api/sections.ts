@@ -80,7 +80,7 @@ export const itemsApi = {
             body: JSON.stringify({ name, description, quantity }),
         }),
 
-    update: (id: number, data: { name?: string; description?: string; quantity?: string; status?: string }) =>
+    update: (id: number, data: { name?: string; description?: string | null; quantity?: string | null; status?: string }) =>
         fetchApi<Item>(`/api/v1/items/${id}`, {
             method: "PUT",
             body: JSON.stringify(data),
@@ -89,5 +89,17 @@ export const itemsApi = {
     delete: (id: number) =>
         fetchApi<void>(`/api/v1/items/${id}`, {
             method: "DELETE",
+        }),
+
+    reorder: (itemIds: number[]) =>
+        fetchApi<void>("/api/v1/items/reorder", {
+            method: "POST",
+            body: JSON.stringify({ ids: itemIds }),
+        }),
+
+    move: (id: number, targetSectionId: number) =>
+        fetchApi<Item>(`/api/v1/items/${id}/move`, {
+            method: "POST",
+            body: JSON.stringify({ targetSectionId }),
         }),
 };

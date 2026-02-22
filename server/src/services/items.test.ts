@@ -55,6 +55,19 @@ describe("ItemsService", () => {
             expect(updated?.status).toBe("completed");
         });
 
+        test("should update item to uncertain status", () => {
+            const item = itemsService.create(testSectionId, "Test Item");
+            const updated = itemsService.update(item.id, { status: "uncertain" });
+            expect(updated?.status).toBe("uncertain");
+        });
+
+        test("should update item name and quantity", () => {
+            const item = itemsService.create(testSectionId, "Test Item");
+            const updated = itemsService.update(item.id, { name: "Updated Name", quantity: "5 lbs" });
+            expect(updated?.name).toBe("Updated Name");
+            expect(updated?.quantity).toBe("5 lbs");
+        });
+
         test("should return null for non-existent item", () => {
             const result = itemsService.update(999, { status: "completed" });
             expect(result).toBeNull();
@@ -67,6 +80,29 @@ describe("ItemsService", () => {
             const result = itemsService.delete(item.id);
             expect(result).toBe(true);
             expect(itemsService.getById(item.id)).toBeNull();
+        });
+    });
+
+    describe("deleteCompletedInSection", () => {
+        test("should delete only completed items in section", () => {
+            const item1 = itemsService.create(testSectionId, "Active Item");
+            const item2 = itemsService.create(testSectionId, "Completed Item");
+            itemsService.update(item2.id, { status: "completed" });
+
+            const count = itemsService.deleteCompletedInSection(testSectionId);
+
+            expect(count).toBe(1);
+            expect(itemsService.getById(item1.id)).not.toBeNull();
+            expect(itemsService.getById(item2.id)).toBeNull();
+        });
+
+        test("should return 0 if no completed items", () => {
+            itemsService.create(testSectionId, "Active Item 1");
+            itemsService.create(testSectionId, "Active Item 2");
+
+            const count = itemsService.deleteCompletedInSection(testSectionId);
+
+            expect(count).toBe(0);
         });
     });
 

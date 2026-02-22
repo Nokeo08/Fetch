@@ -9,6 +9,11 @@ type Toast = {
     type: "success" | "error";
 };
 
+type DragState = {
+    sectionId: number;
+    itemId: number | null;
+};
+
 export default function ListDetail() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -29,11 +34,28 @@ export default function ListDetail() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [collapsedSections, setCollapsedSections] = useState<Set<number>>(new Set());
+    const [expandedCompletedSections, setExpandedCompletedSections] = useState<Set<number>>(new Set());
     const [draggedSectionId, setDraggedSectionId] = useState<number | null>(null);
 
     const [newItemNames, setNewItemNames] = useState<Record<number, string>>({});
+    const [dragState, setDragState] = useState<DragState | null>(null);
+
+    const [showEditItemModal, setShowEditItemModal] = useState(false);
+    const [showDeleteItemModal, setShowDeleteItemModal] = useState(false);
+    const [editingItem, setEditingItem] = useState<{ item: Item; sectionId: number } | null>(null);
+    const [deletingItem, setDeletingItem] = useState<{ item: Item; sectionId: number } | null>(null);
+    const [itemName, setItemName] = useState("");
+    const [itemDescription, setItemDescription] = useState("");
+    const [itemQuantity, setItemQuantity] = useState("");
+    const [itemSectionId, setItemSectionId] = useState<number | null>(null);
+
+    const [showClearCompletedModal, setShowClearCompletedModal] = useState(false);
+    const [clearingSection, setClearingSection] = useState<SectionWithItems | null>(null);
 
     const deleteSectionModalRef = useRef<HTMLDivElement>(null);
+    const deleteItemModalRef = useRef<HTMLDivElement>(null);
+    const clearCompletedModalRef = useRef<HTMLDivElement>(null);
+    const editItemModalRef = useRef<HTMLDivElement>(null);
 
     const showToast = useCallback((message: string, type: "success" | "error" = "success") => {
         setToast({ message, type });
@@ -45,6 +67,24 @@ export default function ListDetail() {
             deleteSectionModalRef.current.focus();
         }
     }, [showDeleteSectionModal]);
+
+    useEffect(() => {
+        if (showDeleteItemModal && deleteItemModalRef.current) {
+            deleteItemModalRef.current.focus();
+        }
+    }, [showDeleteItemModal]);
+
+    useEffect(() => {
+        if (showClearCompletedModal && clearCompletedModalRef.current) {
+            clearCompletedModalRef.current.focus();
+        }
+    }, [showClearCompletedModal]);
+
+    useEffect(() => {
+        if (showEditItemModal && editItemModalRef.current) {
+            editItemModalRef.current.focus();
+        }
+    }, [showEditItemModal]);
 
     const fetchData = useCallback(async () => {
         if (!listId) return;
@@ -171,6 +211,18 @@ export default function ListDetail() {
         });
     };
 
+    const toggleCompletedCollapse = (sectionId: number) => {
+        setExpandedCompletedSections((prev) => {
+            const next = new Set(prev);
+            if (next.has(sectionId)) {
+                next.delete(sectionId);
+            } else {
+                next.add(sectionId);
+            }
+            return next;
+        });
+    };
+
     const handleSectionDragStart = (sectionId: number) => {
         setDraggedSectionId(sectionId);
     };
@@ -225,29 +277,6 @@ export default function ListDetail() {
         }
     };
 
-    const handleToggleItem = async (item: Item, sectionId: number) => {
-        const newStatus = item.status === "completed" ? "active" : "completed";
-        try {
-            const res = await itemsApi.update(item.id, { status: newStatus });
-            if (res.success) {
-                setSections((prev) =>
-                    prev.map((s) =>
-                        s.id === sectionId
-                            ? {
-                                  ...s,
-                                  items: s.items.map((i) =>
-                                      i.id === item.id ? { ...i, status: newStatus } : i
-                                  ),
-                              }
-                            : s
-                    )
-                );
-            }
-        } catch {
-            showToast("Failed to update item", "error");
-        }
-    };
-
     const handleDeleteItem = async (itemId: number, sectionId: number) => {
         try {
             const res = await itemsApi.delete(itemId);
@@ -259,9 +288,222 @@ export default function ListDetail() {
                             : s
                     )
                 );
+                showToast("Item deleted");
             }
         } catch {
             showToast("Failed to delete item", "error");
+        }
+    };
+
+    const openEditItemModal = (item: Item, sectionId: number) => {
+        setEditingItem({ item, sectionId });
+        setItemName(item.name);
+        setItemDescription(item.description || "");
+        setItemQuantity(item.quantity || "");
+        setItemSectionId(item.sectionId);
+        setShowEditItemModal(true);
+    };
+
+    const openDeleteItemModal = (item: Item, sectionId: number) => {
+        setDeletingItem({ item, sectionId });
+        setShowDeleteItemModal(true);
+    };
+
+    const handleEditItem = async () => {
+        if (!editingItem || !itemName.trim() || !itemSectionId) return;
+
+        setIsSubmitting(true);
+        try {
+            const needsMove = itemSectionId !== editingItem.item.sectionId;
+
+            if (needsMove) {
+                const moveRes = await itemsApi.move(editingItem.item.id, itemSectionId);
+                if (!moveRes.success) {
+                    showToast(moveRes.error || "Failed to move item", "error");
+                    return;
+                }
+            }
+
+            const res = await itemsApi.update(editingItem.item.id, {
+                name: itemName.trim(),
+                description: itemDescription.trim() || null,
+                quantity: itemQuantity.trim() || null,
+            });
+            if (res.success && res.data) {
+                setSections((prev) => {
+                    const updated = prev.map((s) => {
+                        if (needsMove) {
+                            if (s.id === editingItem.sectionId) {
+                                return { ...s, items: s.items.filter((i) => i.id !== editingItem.item.id) };
+                            }
+                            if (s.id === itemSectionId) {
+                                return { ...s, items: [...s.items, { ...res.data!, sectionId: itemSectionId }] };
+                            }
+                        } else if (s.id === editingItem.sectionId) {
+                            return {
+                                ...s,
+                                items: s.items.map((i) =>
+                                    i.id === editingItem.item.id ? res.data! : i
+                                ),
+                            };
+                        }
+                        return s;
+                    });
+                    return updated;
+                });
+                setShowEditItemModal(false);
+                setEditingItem(null);
+                showToast(needsMove ? "Item moved and updated" : "Item updated");
+            } else {
+                showToast(res.error || "Failed to update item", "error");
+            }
+        } catch {
+            showToast("Failed to update item", "error");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleConfirmDeleteItem = async () => {
+        if (!deletingItem) return;
+
+        setIsSubmitting(true);
+        try {
+            await handleDeleteItem(deletingItem.item.id, deletingItem.sectionId);
+            setShowDeleteItemModal(false);
+            setDeletingItem(null);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleItemDragStart = (sectionId: number, itemId: number) => {
+        setDragState({ sectionId, itemId });
+    };
+
+    const handleItemDragOver = (e: React.DragEvent, sectionId: number, targetItemId: number) => {
+        e.preventDefault();
+        if (!dragState || dragState.sectionId !== sectionId || dragState.itemId === targetItemId) return;
+
+        const sectionIndex = sections.findIndex((s) => s.id === sectionId);
+        if (sectionIndex === -1) return;
+
+        const section = sections[sectionIndex];
+        const items = section.items;
+        const draggedIndex = items.findIndex((i) => i.id === dragState.itemId);
+        const targetIndex = items.findIndex((i) => i.id === targetItemId);
+
+        if (draggedIndex === -1 || targetIndex === -1) return;
+
+        const newItems = [...items];
+        const [draggedItem] = newItems.splice(draggedIndex, 1);
+        newItems.splice(targetIndex, 0, draggedItem);
+
+        const newSections = [...sections];
+        newSections[sectionIndex] = { ...section, items: newItems };
+        setSections(newSections);
+    };
+
+    const handleItemDragEnd = async () => {
+        if (dragState) {
+            const section = sections.find((s) => s.id === dragState.sectionId);
+            if (section) {
+                const ids = section.items.map((i) => i.id);
+                try {
+                    await itemsApi.reorder(ids);
+                } catch {
+                    showToast("Failed to save order", "error");
+                }
+            }
+        }
+        setDragState(null);
+    };
+
+    const handleToggleCompleted = async (item: Item, sectionId: number) => {
+        const newStatus: Item["status"] = item.status === "completed" ? "active" : "completed";
+
+        try {
+            const res = await itemsApi.update(item.id, { status: newStatus });
+            if (res.success) {
+                setSections((prev) =>
+                    prev.map((s) => {
+                        if (s.id !== sectionId) return s;
+                        const updatedItems = s.items.map((i) =>
+                            i.id === item.id ? { ...i, status: newStatus } : i
+                        );
+                        const sortedItems = sortItemsByStatus(updatedItems);
+                        return { ...s, items: sortedItems };
+                    })
+                );
+            }
+        } catch {
+            showToast("Failed to update item", "error");
+        }
+    };
+
+    const handleToggleUncertain = async (item: Item, sectionId: number) => {
+        const newStatus: Item["status"] = item.status === "uncertain" ? "active" : "uncertain";
+
+        try {
+            const res = await itemsApi.update(item.id, { status: newStatus });
+            if (res.success) {
+                setSections((prev) =>
+                    prev.map((s) => {
+                        if (s.id !== sectionId) return s;
+                        return {
+                            ...s,
+                            items: s.items.map((i) =>
+                                i.id === item.id ? { ...i, status: newStatus } : i
+                            ),
+                        };
+                    })
+                );
+            }
+        } catch {
+            showToast("Failed to update item", "error");
+        }
+    };
+
+    const sortItemsByStatus = (items: Item[]): Item[] => {
+        return [...items].sort((a, b) => {
+            const aCompleted = a.status === "completed" ? 1 : 0;
+            const bCompleted = b.status === "completed" ? 1 : 0;
+            if (aCompleted !== bCompleted) return aCompleted - bCompleted;
+            return a.sortOrder - b.sortOrder;
+        });
+    };
+
+    const openClearCompletedModal = (section: SectionWithItems) => {
+        setClearingSection(section);
+        setShowClearCompletedModal(true);
+    };
+
+    const handleClearCompleted = async () => {
+        if (!clearingSection) return;
+
+        setIsSubmitting(true);
+        try {
+            const completedItems = clearingSection.items.filter((i) => i.status === "completed");
+            const count = completedItems.length;
+
+            for (const item of completedItems) {
+                await itemsApi.delete(item.id);
+            }
+
+            setSections((prev) =>
+                prev.map((s) =>
+                    s.id === clearingSection.id
+                        ? { ...s, items: s.items.filter((i) => i.status !== "completed") }
+                        : s
+                )
+            );
+            setShowClearCompletedModal(false);
+            setClearingSection(null);
+            showToast(`Cleared ${count} completed item${count !== 1 ? "s" : ""}`);
+        } catch {
+            showToast("Failed to clear completed items", "error");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -314,6 +556,14 @@ export default function ListDetail() {
                                 <span className="section-name">{section.name}</span>
                                 <span className="section-item-count">{section.items.length}</span>
                                 <div className="section-actions">
+                                    {section.items.some((i) => i.status === "completed") && (
+                                        <button
+                                            className="section-clear-btn"
+                                            onClick={() => openClearCompletedModal(section)}
+                                        >
+                                            Clear
+                                        </button>
+                                    )}
                                     <button
                                         className="section-edit-btn"
                                         onClick={() => openEditSectionModal(section)}
@@ -358,34 +608,149 @@ export default function ListDetail() {
                                 {section.items.length === 0 ? (
                                     <div className="items-empty">No items in this section</div>
                                 ) : (
-                                    <div className="items-list">
-                                        {section.items.map((item) => (
-                                            <div
-                                                key={item.id}
-                                                className="item-row"
-                                                onClick={() => handleToggleItem(item, section.id)}
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    className="item-checkbox"
-                                                    checked={item.status === "completed"}
-                                                    onChange={() => handleToggleItem(item, section.id)}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                />
-                                                <span className={`item-name ${item.status === "completed" ? "completed" : ""}`}>
-                                                    {item.name}
-                                                </span>
-                                                {item.quantity && (
-                                                    <span className="item-quantity">{item.quantity}</span>
+                                    (() => {
+                                        const activeItems = section.items.filter((i) => i.status !== "completed");
+                                        const completedItems = section.items.filter((i) => i.status === "completed");
+                                        const isCompletedExpanded = expandedCompletedSections.has(section.id);
+
+                                        return (
+                                            <>
+                                                {activeItems.length > 0 && (
+                                                    <div className="items-list">
+                                                        {activeItems.map((item) => (
+                                                            <div
+                                                                key={item.id}
+                                                                className={`item-row ${item.status} ${dragState?.itemId === item.id ? "dragging" : ""}`}
+                                                                draggable
+                                                                onClick={() => handleToggleCompleted(item, section.id)}
+                                                                onDragStart={() => handleItemDragStart(section.id, item.id)}
+                                                                onDragOver={(e) => handleItemDragOver(e, section.id, item.id)}
+                                                                onDragEnd={handleItemDragEnd}
+                                                            >
+                                                                <span
+                                                                    className="item-drag-handle"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                >
+                                                                    ⋮
+                                                                </span>
+                                                                <div className="item-content">
+                                                                    <div className="item-row-main">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            className="item-checkbox"
+                                                                            checked={item.status === "completed"}
+                                                                            onChange={() => handleToggleCompleted(item, section.id)}
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                        />
+                                                                        <span className="item-name">
+                                                                            {item.name}
+                                                                            {item.quantity && <span className="item-quantity-inline"> ({item.quantity})</span>}
+                                                                        </span>
+                                                                    </div>
+                                                                    {item.description && (
+                                                                        <span className="item-description">{item.description}</span>
+                                                                    )}
+                                                                </div>
+                                                                <div className="item-actions" onClick={(e) => e.stopPropagation()}>
+                                                                    {item.status !== "completed" && (
+                                                                        <button
+                                                                            className="item-uncertain-btn"
+                                                                            onClick={() => handleToggleUncertain(item, section.id)}
+                                                                            title={item.status === "uncertain" ? "Remove uncertain" : "Mark as uncertain"}
+                                                                        >
+                                                                            ?
+                                                                        </button>
+                                                                    )}
+                                                                    <button
+                                                                        className="item-edit-btn"
+                                                                        onClick={() => openEditItemModal(item, section.id)}
+                                                                        title="Edit"
+                                                                    >
+                                                                        ✎
+                                                                    </button>
+                                                                    <button
+                                                                        className="item-delete-btn"
+                                                                        onClick={() => openDeleteItemModal(item, section.id)}
+                                                                        title="Delete"
+                                                                    >
+                                                                        ✕
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 )}
-                                                <div className="item-actions" onClick={(e) => e.stopPropagation()}>
-                                                    <button onClick={() => handleDeleteItem(item.id, section.id)}>
-                                                        ✕
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+
+                                                {completedItems.length > 0 && (
+                                                    <div className="completed-section">
+                                                        <button
+                                                            className="completed-section-header"
+                                                            onClick={() => toggleCompletedCollapse(section.id)}
+                                                        >
+                                                            <span className={`completed-collapse-btn ${isCompletedExpanded ? "" : "collapsed"}`}>▼</span>
+                                                            <span>Completed ({completedItems.length})</span>
+                                                        </button>
+                                                        {isCompletedExpanded && (
+                                                            <div className="completed-items-list">
+                                                                {completedItems.map((item) => (
+                                                                    <div
+                                                                        key={item.id}
+                                                                        className={`item-row completed ${dragState?.itemId === item.id ? "dragging" : ""}`}
+                                                                        draggable
+                                                                        onClick={() => handleToggleCompleted(item, section.id)}
+                                                                        onDragStart={() => handleItemDragStart(section.id, item.id)}
+                                                                        onDragOver={(e) => handleItemDragOver(e, section.id, item.id)}
+                                                                        onDragEnd={handleItemDragEnd}
+                                                                    >
+                                                                        <span
+                                                                            className="item-drag-handle"
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                        >
+                                                                            ⋮
+                                                                        </span>
+                                                                        <div className="item-content">
+                                                                            <div className="item-row-main">
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    className="item-checkbox"
+                                                                                    checked={true}
+                                                                                    onChange={() => handleToggleCompleted(item, section.id)}
+                                                                                    onClick={(e) => e.stopPropagation()}
+                                                                                />
+                                                                                <span className="item-name completed">
+                                                                                    {item.name}
+                                                                                    {item.quantity && <span className="item-quantity-inline"> ({item.quantity})</span>}
+                                                                                </span>
+                                                                            </div>
+                                                                            {item.description && (
+                                                                                <span className="item-description">{item.description}</span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="item-actions" onClick={(e) => e.stopPropagation()}>
+                                                                            <button
+                                                                                className="item-edit-btn"
+                                                                                onClick={() => openEditItemModal(item, section.id)}
+                                                                                title="Edit"
+                                                                            >
+                                                                                ✎
+                                                                            </button>
+                                                                            <button
+                                                                                className="item-delete-btn"
+                                                                                onClick={() => openDeleteItemModal(item, section.id)}
+                                                                                title="Delete"
+                                                                            >
+                                                                                ✕
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </>
+                                        );
+                                    })()
                                 )}
                             </div>
                         </div>
@@ -504,6 +869,158 @@ export default function ListDetail() {
                                 disabled={isSubmitting}
                             >
                                 {isSubmitting ? "Deleting..." : "Delete"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showEditItemModal && editingItem && (
+                <div className="modal-overlay" onClick={() => setShowEditItemModal(false)}>
+                    <div
+                        ref={editItemModalRef}
+                        className="modal"
+                        tabIndex={-1}
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" && itemName.trim() && !isSubmitting) {
+                                handleEditItem();
+                            }
+                            if (e.key === "Escape") {
+                                setShowEditItemModal(false);
+                            }
+                        }}
+                    >
+                        <h2>Edit Item</h2>
+                        <div className="modal-form">
+                            <div className="form-group">
+                                <label htmlFor="item-name">Name</label>
+                                <input
+                                    id="item-name"
+                                    type="text"
+                                    value={itemName}
+                                    onChange={(e) => setItemName(e.target.value)}
+                                    placeholder="Item name"
+                                    maxLength={200}
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="item-description">Description (optional)</label>
+                                <input
+                                    id="item-description"
+                                    type="text"
+                                    value={itemDescription}
+                                    onChange={(e) => setItemDescription(e.target.value)}
+                                    placeholder="Description"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="item-quantity">Quantity (optional)</label>
+                                <input
+                                    id="item-quantity"
+                                    type="text"
+                                    value={itemQuantity}
+                                    onChange={(e) => setItemQuantity(e.target.value)}
+                                    placeholder="e.g., 2 lbs, 3 items"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="item-section">Section</label>
+                                <select
+                                    id="item-section"
+                                    value={itemSectionId || ""}
+                                    onChange={(e) => setItemSectionId(parseInt(e.target.value, 10))}
+                                >
+                                    {sections.map((section) => (
+                                        <option key={section.id} value={section.id}>
+                                            {section.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="modal-actions">
+                            <button className="cancel-btn" onClick={() => setShowEditItemModal(false)}>
+                                Cancel
+                            </button>
+                            <button
+                                className="submit-btn"
+                                onClick={handleEditItem}
+                                disabled={!itemName.trim() || isSubmitting}
+                            >
+                                {isSubmitting ? "Saving..." : "Save"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showDeleteItemModal && deletingItem && (
+                <div className="modal-overlay" onClick={() => setShowDeleteItemModal(false)}>
+                    <div
+                        ref={deleteItemModalRef}
+                        className="modal delete-confirm"
+                        tabIndex={-1}
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" && !isSubmitting) {
+                                handleConfirmDeleteItem();
+                            }
+                            if (e.key === "Escape") {
+                                setShowDeleteItemModal(false);
+                            }
+                        }}
+                    >
+                        <h2>Delete Item?</h2>
+                        <p>Are you sure you want to delete "{deletingItem.item.name}"?</p>
+                        <div className="modal-actions">
+                            <button className="cancel-btn" onClick={() => setShowDeleteItemModal(false)}>
+                                Cancel
+                            </button>
+                            <button
+                                className="submit-btn danger-btn"
+                                onClick={handleConfirmDeleteItem}
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? "Deleting..." : "Delete"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showClearCompletedModal && clearingSection && (
+                <div className="modal-overlay" onClick={() => setShowClearCompletedModal(false)}>
+                    <div
+                        ref={clearCompletedModalRef}
+                        className="modal delete-confirm"
+                        tabIndex={-1}
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" && !isSubmitting) {
+                                handleClearCompleted();
+                            }
+                            if (e.key === "Escape") {
+                                setShowClearCompletedModal(false);
+                            }
+                        }}
+                    >
+                        <h2>Clear Completed Items?</h2>
+                        <p>
+                            Remove {clearingSection.items.filter((i) => i.status === "completed").length} completed item(s)
+                            from "{clearingSection.name}"?
+                        </p>
+                        <div className="modal-actions">
+                            <button className="cancel-btn" onClick={() => setShowClearCompletedModal(false)}>
+                                Cancel
+                            </button>
+                            <button
+                                className="submit-btn danger-btn"
+                                onClick={handleClearCompleted}
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? "Clearing..." : "Clear"}
                             </button>
                         </div>
                     </div>
