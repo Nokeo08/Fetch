@@ -1,7 +1,8 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { Database } from "bun:sqlite";
-import { createTemplatesService } from "./templates";
+import { createTemplatesService, type SectionWithItems } from "./templates";
 import { CREATE_TABLES, CREATE_INDEXES } from "../db/schema";
+import type { Section, Item } from "shared/dist";
 
 describe("TemplatesService", () => {
     let db: Database;
@@ -208,6 +209,438 @@ describe("TemplatesService", () => {
             expect(results).toHaveLength(2);
             expect(results[0].items).toHaveLength(1);
             expect(results[1].items).toHaveLength(1);
+        });
+    });
+
+    describe("applyToList", () => {
+        test("should throw error for non-existent template", () => {
+            const mockSections: SectionWithItems[] = [];
+            const mockCreateSection = (name: string): Section => ({
+                id: 1,
+                listId: 1,
+                name,
+                sortOrder: 0,
+                createdAt: new Date().toISOString(),
+            });
+            const mockCreateItem = (sectionId: number, name: string): Item => ({
+                id: 1,
+                sectionId,
+                name,
+                description: null,
+                quantity: null,
+                status: "active",
+                sortOrder: 0,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            });
+
+            expect(() => templatesService.applyToList(999, mockSections, mockCreateSection, mockCreateItem)).toThrow("Template not found");
+        });
+
+        test("should add items from template to empty list", () => {
+            const template = templatesService.create("Weekly");
+            templatesService.addItem(template.id, "Milk");
+            templatesService.addItem(template.id, "Bread");
+
+            const mockSections: SectionWithItems[] = [];
+            let sectionIdCounter = 0;
+            let itemIdCounter = 0;
+
+            const mockCreateSection = (name: string): Section => ({
+                id: ++sectionIdCounter,
+                listId: 1,
+                name,
+                sortOrder: 0,
+                createdAt: new Date().toISOString(),
+            });
+
+            const mockCreateItem = (sectionId: number, name: string): Item => ({
+                id: ++itemIdCounter,
+                sectionId,
+                name,
+                description: null,
+                quantity: null,
+                status: "active",
+                sortOrder: 0,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            });
+
+            const result = templatesService.applyToList(template.id, mockSections, mockCreateSection, mockCreateItem);
+
+            expect(result.added).toBe(2);
+            expect(result.skipped).toHaveLength(0);
+        });
+
+        test("should skip duplicate items", () => {
+            const template = templatesService.create("Weekly");
+            templatesService.addItem(template.id, "Milk");
+            templatesService.addItem(template.id, "Bread");
+
+            const existingSection: Section = {
+                id: 1,
+                listId: 1,
+                name: "Dairy",
+                sortOrder: 0,
+                createdAt: new Date().toISOString(),
+            };
+
+            const existingItem: Item = {
+                id: 1,
+                sectionId: 1,
+                name: "Milk",
+                description: null,
+                quantity: null,
+                status: "active",
+                sortOrder: 0,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            };
+
+            const mockSections: SectionWithItems[] = [
+                { ...existingSection, items: [existingItem] },
+            ];
+
+            let sectionIdCounter = 1;
+            let itemIdCounter = 1;
+
+            const mockCreateSection = (name: string): Section => ({
+                id: ++sectionIdCounter,
+                listId: 1,
+                name,
+                sortOrder: 0,
+                createdAt: new Date().toISOString(),
+            });
+
+            const mockCreateItem = (sectionId: number, name: string): Item => ({
+                id: ++itemIdCounter,
+                sectionId,
+                name,
+                description: null,
+                quantity: null,
+                status: "active",
+                sortOrder: 0,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            });
+
+            const result = templatesService.applyToList(template.id, mockSections, mockCreateSection, mockCreateItem);
+
+            expect(result.added).toBe(1);
+            expect(result.skipped).toEqual(["Milk"]);
+        });
+
+        test("should use existing section when sectionName matches", () => {
+            const template = templatesService.create("Weekly");
+            templatesService.addItem(template.id, "Milk", { sectionName: "Dairy" });
+
+            const existingSection: Section = {
+                id: 1,
+                listId: 1,
+                name: "Dairy",
+                sortOrder: 0,
+                createdAt: new Date().toISOString(),
+            };
+
+            const mockSections: SectionWithItems[] = [
+                { ...existingSection, items: [] },
+            ];
+
+            let sectionCreated = false;
+            let itemCreated = false;
+
+            const mockCreateSection = (name: string): Section => {
+                sectionCreated = true;
+                return {
+                    id: 2,
+                    listId: 1,
+                    name,
+                    sortOrder: 0,
+                    createdAt: new Date().toISOString(),
+                };
+            };
+
+            const mockCreateItem = (sectionId: number, name: string): Item => {
+                itemCreated = true;
+                expect(sectionId).toBe(1);
+                return {
+                    id: 1,
+                    sectionId,
+                    name,
+                    description: null,
+                    quantity: null,
+                    status: "active",
+                    sortOrder: 0,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                };
+            };
+
+            templatesService.applyToList(template.id, mockSections, mockCreateSection, mockCreateItem);
+
+            expect(sectionCreated).toBe(false);
+            expect(itemCreated).toBe(true);
+        });
+
+        test("should create new section when sectionName does not exist", () => {
+            const template = templatesService.create("Weekly");
+            templatesService.addItem(template.id, "Milk", { sectionName: "Dairy" });
+
+            const existingSection: Section = {
+                id: 1,
+                listId: 1,
+                name: "Produce",
+                sortOrder: 0,
+                createdAt: new Date().toISOString(),
+            };
+
+            const mockSections: SectionWithItems[] = [
+                { ...existingSection, items: [] },
+            ];
+
+            let newSectionId = 0;
+            let newSectionName = "";
+
+            const mockCreateSection = (name: string): Section => {
+                newSectionName = name;
+                newSectionId = 2;
+                return {
+                    id: 2,
+                    listId: 1,
+                    name,
+                    sortOrder: 0,
+                    createdAt: new Date().toISOString(),
+                };
+            };
+
+            const mockCreateItem = (sectionId: number, name: string): Item => {
+                expect(sectionId).toBe(2);
+                return {
+                    id: 1,
+                    sectionId,
+                    name,
+                    description: null,
+                    quantity: null,
+                    status: "active",
+                    sortOrder: 0,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                };
+            };
+
+            templatesService.applyToList(template.id, mockSections, mockCreateSection, mockCreateItem);
+
+            expect(newSectionName).toBe("Dairy");
+        });
+
+        test("should apply only selected items when selectedItemIds provided", () => {
+            const template = templatesService.create("Weekly");
+            const item1 = templatesService.addItem(template.id, "Milk");
+            const item2 = templatesService.addItem(template.id, "Bread");
+            templatesService.addItem(template.id, "Eggs");
+
+            const mockSections: SectionWithItems[] = [];
+            let itemCounter = 0;
+
+            const mockCreateSection = (name: string): Section => ({
+                id: 1,
+                listId: 1,
+                name,
+                sortOrder: 0,
+                createdAt: new Date().toISOString(),
+            });
+
+            const mockCreateItem = (sectionId: number, name: string): Item => ({
+                id: ++itemCounter,
+                sectionId,
+                name,
+                description: null,
+                quantity: null,
+                status: "active",
+                sortOrder: 0,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            });
+
+            const result = templatesService.applyToList(
+                template.id,
+                mockSections,
+                mockCreateSection,
+                mockCreateItem,
+                [item1.id, item2.id]
+            );
+
+            expect(result.added).toBe(2);
+        });
+
+        test("should copy description and quantity from template item", () => {
+            const template = templatesService.create("Weekly");
+            templatesService.addItem(template.id, "Milk", {
+                description: "Organic whole milk",
+                quantity: "1 gallon",
+            });
+
+            const mockSections: SectionWithItems[] = [];
+            let createdItem: Item | null = null;
+
+            const mockCreateSection = (name: string): Section => ({
+                id: 1,
+                listId: 1,
+                name,
+                sortOrder: 0,
+                createdAt: new Date().toISOString(),
+            });
+
+            const mockCreateItem = (sectionId: number, name: string, description?: string, quantity?: string): Item => {
+                createdItem = {
+                    id: 1,
+                    sectionId,
+                    name,
+                    description: description || null,
+                    quantity: quantity || null,
+                    status: "active",
+                    sortOrder: 0,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                };
+                return createdItem;
+            };
+
+            templatesService.applyToList(template.id, mockSections, mockCreateSection, mockCreateItem);
+
+            expect(createdItem).not.toBeNull();
+            expect(createdItem!.name).toBe("Milk");
+            expect(createdItem!.description).toBe("Organic whole milk");
+            expect(createdItem!.quantity).toBe("1 gallon");
+        });
+    });
+
+    describe("createFromSections", () => {
+        test("should create template from sections with items", () => {
+            const section1: SectionWithItems = {
+                id: 1,
+                listId: 1,
+                name: "Dairy",
+                sortOrder: 0,
+                createdAt: new Date().toISOString(),
+                items: [
+                    {
+                        id: 1,
+                        sectionId: 1,
+                        name: "Milk",
+                        description: "Organic",
+                        quantity: "1 gallon",
+                        status: "active",
+                        sortOrder: 0,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                    },
+                    {
+                        id: 2,
+                        sectionId: 1,
+                        name: "Cheese",
+                        description: null,
+                        quantity: null,
+                        status: "active",
+                        sortOrder: 1,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                    },
+                ],
+            };
+
+            const section2: SectionWithItems = {
+                id: 2,
+                listId: 1,
+                name: "Produce",
+                sortOrder: 1,
+                createdAt: new Date().toISOString(),
+                items: [
+                    {
+                        id: 3,
+                        sectionId: 2,
+                        name: "Apples",
+                        description: null,
+                        quantity: "6",
+                        status: "active",
+                        sortOrder: 0,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                    },
+                ],
+            };
+
+            const template = templatesService.createFromSections("Weekly Groceries", [section1, section2]);
+
+            expect(template.name).toBe("Weekly Groceries");
+            expect(template.items).toHaveLength(3);
+
+            const milkItem = template.items.find((i) => i.name === "Milk");
+            expect(milkItem?.description).toBe("Organic");
+            expect(milkItem?.quantity).toBe("1 gallon");
+            expect(milkItem?.sectionName).toBe("Dairy");
+
+            const applesItem = template.items.find((i) => i.name === "Apples");
+            expect(applesItem?.quantity).toBe("6");
+            expect(applesItem?.sectionName).toBe("Produce");
+        });
+
+        test("should create template from empty sections", () => {
+            const template = templatesService.createFromSections("Empty Template", []);
+
+            expect(template.name).toBe("Empty Template");
+            expect(template.items).toHaveLength(0);
+        });
+
+        test("should preserve item order from sections", () => {
+            const section: SectionWithItems = {
+                id: 1,
+                listId: 1,
+                name: "Items",
+                sortOrder: 0,
+                createdAt: new Date().toISOString(),
+                items: [
+                    {
+                        id: 1,
+                        sectionId: 1,
+                        name: "First",
+                        description: null,
+                        quantity: null,
+                        status: "active",
+                        sortOrder: 0,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                    },
+                    {
+                        id: 2,
+                        sectionId: 1,
+                        name: "Second",
+                        description: null,
+                        quantity: null,
+                        status: "active",
+                        sortOrder: 1,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                    },
+                    {
+                        id: 3,
+                        sectionId: 1,
+                        name: "Third",
+                        description: null,
+                        quantity: null,
+                        status: "active",
+                        sortOrder: 2,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                    },
+                ],
+            };
+
+            const template = templatesService.createFromSections("Ordered", [section]);
+
+            expect(template.items[0]?.name).toBe("First");
+            expect(template.items[1]?.name).toBe("Second");
+            expect(template.items[2]?.name).toBe("Third");
         });
     });
 });

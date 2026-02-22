@@ -174,7 +174,7 @@ describe("Lists API", () => {
             const createRes = await app.request("/api/v1/lists", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: "Original Name" }),
+                body: JSON.stringify({ name: "Test List for Update Name" }),
             });
             const createData = (await createRes.json()) as { success: boolean; data: { id: number } };
             const listId = createData.data.id;
@@ -320,6 +320,289 @@ describe("Lists API", () => {
             const listsData = (await listsRes.json()) as { success: boolean; data: Array<{ id: number }> };
             expect(listsData.data[0].id).toBe(list2Data.data.id);
             expect(listsData.data[1].id).toBe(list1Data.data.id);
+        });
+    });
+});
+
+describe("Templates API", () => {
+    describe("GET /api/v1/templates", () => {
+        test("returns templates with items", async () => {
+            const createRes = await app.request("/api/v1/templates", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Test Template for Get" }),
+            });
+            const createData = (await createRes.json()) as { success: boolean; data: { id: number } };
+            const templateId = createData.data.id;
+
+            await app.request(`/api/v1/templates/${templateId}/items`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Milk", quantity: "1 gallon" }),
+            });
+
+            const res = await app.request("/api/v1/templates");
+            expect(res.status).toBe(200);
+
+            const data = (await res.json()) as { success: boolean; data: Array<{ id: number; name: string; items: unknown[] }> };
+            expect(data.success).toBe(true);
+            const created = data.data.find((t) => t.id === templateId);
+            expect(created).toBeDefined();
+            expect(created?.name).toBe("Test Template for Get");
+            expect(created?.items).toHaveLength(1);
+        });
+    });
+
+    describe("POST /api/v1/templates", () => {
+        test("creates a template", async () => {
+            const res = await app.request("/api/v1/templates", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Weekly Groceries" }),
+            });
+            expect(res.status).toBe(201);
+
+            const data = (await res.json()) as { success: boolean; data: { id: number; name: string } };
+            expect(data.success).toBe(true);
+            expect(data.data.name).toBe("Weekly Groceries");
+        });
+
+        test("validates name is required", async () => {
+            const res = await app.request("/api/v1/templates", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({}),
+            });
+            expect(res.status).toBe(400);
+
+            const data = (await res.json()) as { success: boolean; error: string };
+            expect(data.success).toBe(false);
+            expect(data.error).toContain("Name must be");
+        });
+    });
+
+    describe("GET /api/v1/templates/:id", () => {
+        test("returns template with items", async () => {
+            const createRes = await app.request("/api/v1/templates", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Weekly" }),
+            });
+            const createData = (await createRes.json()) as { success: boolean; data: { id: number } };
+            const templateId = createData.data.id;
+
+            await app.request(`/api/v1/templates/${templateId}/items`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Milk" }),
+            });
+
+            const res = await app.request(`/api/v1/templates/${templateId}`);
+            expect(res.status).toBe(200);
+
+            const data = (await res.json()) as { success: boolean; data: { id: number; items: unknown[] } };
+            expect(data.success).toBe(true);
+            expect(data.data.items).toHaveLength(1);
+        });
+
+        test("returns 404 for non-existent template", async () => {
+            const res = await app.request("/api/v1/templates/999");
+            expect(res.status).toBe(404);
+
+            const data = (await res.json()) as { success: boolean; error: string };
+            expect(data.success).toBe(false);
+            expect(data.error).toBe("Template not found");
+        });
+    });
+
+    describe("PUT /api/v1/templates/:id", () => {
+        test("updates template name", async () => {
+            const createRes = await app.request("/api/v1/templates", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Original" }),
+            });
+            const createData = (await createRes.json()) as { success: boolean; data: { id: number } };
+            const templateId = createData.data.id;
+
+            const res = await app.request(`/api/v1/templates/${templateId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Updated" }),
+            });
+            expect(res.status).toBe(200);
+
+            const data = (await res.json()) as { success: boolean; data: { name: string } };
+            expect(data.data.name).toBe("Updated");
+        });
+    });
+
+    describe("DELETE /api/v1/templates/:id", () => {
+        test("deletes template", async () => {
+            const createRes = await app.request("/api/v1/templates", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "To Delete" }),
+            });
+            const createData = (await createRes.json()) as { success: boolean; data: { id: number } };
+            const templateId = createData.data.id;
+
+            const res = await app.request(`/api/v1/templates/${templateId}`, {
+                method: "DELETE",
+            });
+            expect(res.status).toBe(200);
+
+            const getRes = await app.request(`/api/v1/templates/${templateId}`);
+            expect(getRes.status).toBe(404);
+        });
+    });
+
+    describe("POST /api/v1/templates/:id/items", () => {
+        test("adds item to template", async () => {
+            const createRes = await app.request("/api/v1/templates", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Weekly" }),
+            });
+            const createData = (await createRes.json()) as { success: boolean; data: { id: number } };
+            const templateId = createData.data.id;
+
+            const res = await app.request(`/api/v1/templates/${templateId}/items`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Milk", quantity: "1 gallon", sectionName: "Dairy" }),
+            });
+            expect(res.status).toBe(201);
+
+            const data = (await res.json()) as { success: boolean; data: { name: string; quantity: string; sectionName: string } };
+            expect(data.data.name).toBe("Milk");
+            expect(data.data.quantity).toBe("1 gallon");
+            expect(data.data.sectionName).toBe("Dairy");
+        });
+    });
+
+    describe("POST /api/v1/templates/:id/apply", () => {
+        test("applies template to list", async () => {
+            const templateRes = await app.request("/api/v1/templates", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Weekly" }),
+            });
+            const templateData = (await templateRes.json()) as { success: boolean; data: { id: number } };
+            const templateId = templateData.data.id;
+
+            await app.request(`/api/v1/templates/${templateId}/items`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Milk" }),
+            });
+
+            const listRes = await app.request("/api/v1/lists", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Shopping for Apply Test" }),
+            });
+            const listData = (await listRes.json()) as { success: boolean; data: { id: number } };
+            const listId = listData.data.id;
+
+            const res = await app.request(`/api/v1/templates/${templateId}/apply`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ listId }),
+            });
+            expect(res.status).toBe(200);
+
+            const data = (await res.json()) as { success: boolean; data: { added: number; skipped: string[] } };
+            expect(data.data.added).toBe(1);
+            expect(data.data.skipped).toHaveLength(0);
+        });
+
+        test("skips duplicate items", async () => {
+            const templateRes = await app.request("/api/v1/templates", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Weekly" }),
+            });
+            const templateData = (await templateRes.json()) as { success: boolean; data: { id: number } };
+            const templateId = templateData.data.id;
+
+            await app.request(`/api/v1/templates/${templateId}/items`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Milk" }),
+            });
+
+            const listRes = await app.request("/api/v1/lists", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Shopping for Skip Test" }),
+            });
+            const listData = (await listRes.json()) as { success: boolean; data: { id: number } };
+            const listId = listData.data.id;
+
+            const sectionsRes = await app.request(`/api/v1/lists/${listId}/sections`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Dairy" }),
+            });
+            const sectionsData = (await sectionsRes.json()) as { success: boolean; data: { id: number } };
+            const sectionId = sectionsData.data.id;
+
+            await app.request(`/api/v1/sections/${sectionId}/items`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Milk" }),
+            });
+
+            const res = await app.request(`/api/v1/templates/${templateId}/apply`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ listId }),
+            });
+            expect(res.status).toBe(200);
+
+            const data = (await res.json()) as { success: boolean; data: { added: number; skipped: string[] } };
+            expect(data.data.added).toBe(0);
+            expect(data.data.skipped).toEqual(["Milk"]);
+        });
+    });
+
+    describe("POST /api/v1/lists/:id/template", () => {
+        test("creates template from list", async () => {
+            const listRes = await app.request("/api/v1/lists", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Shopping for Template Create" }),
+            });
+            const listData = (await listRes.json()) as { success: boolean; data: { id: number } };
+            const listId = listData.data.id;
+
+            const sectionsRes = await app.request(`/api/v1/lists/${listId}/sections`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Dairy" }),
+            });
+            const sectionsData = (await sectionsRes.json()) as { success: boolean; data: { id: number } };
+            const sectionId = sectionsData.data.id;
+
+            await app.request(`/api/v1/sections/${sectionId}/items`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Milk", quantity: "1 gallon" }),
+            });
+
+            const res = await app.request(`/api/v1/lists/${listId}/template`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Weekly Template" }),
+            });
+            expect(res.status).toBe(201);
+
+            const data = (await res.json()) as { success: boolean; data: { name: string; items: Array<{ name: string; sectionName: string }> } };
+            expect(data.data.name).toBe("Weekly Template");
+            expect(data.data.items).toHaveLength(1);
+            expect(data.data.items[0]?.name).toBe("Milk");
+            expect(data.data.items[0]?.sectionName).toBe("Dairy");
         });
     });
 });
