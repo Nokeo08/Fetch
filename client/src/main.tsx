@@ -9,6 +9,7 @@ import ListDetail from "./ListDetail.tsx";
 import Templates from "./Templates.tsx";
 import TemplateDetail from "./TemplateDetail.tsx";
 import { AuthProvider, useAuth } from "./AuthContext.tsx";
+import { WebSocketProvider } from "./WebSocketContext.tsx";
 
 const queryClient = new QueryClient();
 
@@ -91,7 +92,9 @@ function Main() {
             <QueryClientProvider client={queryClient}>
                 <BrowserRouter>
                     <AuthProvider>
-                        <AppRoutes />
+                        <WebSocketProvider>
+                            <AppRoutes />
+                        </WebSocketProvider>
                     </AuthProvider>
                 </BrowserRouter>
             </QueryClientProvider>

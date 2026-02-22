@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 import Lists from "./Lists";
+import ConnectionStatus from "./ConnectionStatus";
 import "./App.css";
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
 
     return (
         <div className="app">
+            <ConnectionStatus />
             <header className="app-header">
                 <h1>Fetch</h1>
                 <div className="header-nav">

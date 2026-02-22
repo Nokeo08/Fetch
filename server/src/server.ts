@@ -1,5 +1,6 @@
 import { serve } from "bun";
 import app, { db, closeDatabase } from "./index";
+import { wsApp, websocket } from "./websocket";
 import { getConfig } from "./config";
 
 const config = getConfig();
@@ -60,8 +61,10 @@ console.log(`[Server] Starting Fetch server on port ${port}...`);
 server = serve({
     port,
     fetch: app.fetch,
+    websocket,
     idleTimeout: 255,
 });
 
 console.log(`[Server] Fetch server running at http://localhost:${port}`);
 console.log(`[Server] Health check available at http://localhost:${port}/health`);
+console.log(`[Server] WebSocket available at ws://localhost:${port}/ws`);

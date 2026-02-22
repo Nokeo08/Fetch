@@ -26,6 +26,20 @@ import {
     constantTimeEquals,
     type AuthVariables,
 } from "./middleware";
+import { wsApp } from "./websocket";
+import {
+    broadcastListCreated,
+    broadcastListUpdated,
+    broadcastListDeleted,
+    broadcastSectionCreated,
+    broadcastSectionUpdated,
+    broadcastSectionDeleted,
+    broadcastSectionReordered,
+    broadcastItemCreated,
+    broadcastItemUpdated,
+    broadcastItemDeleted,
+    broadcastItemMoved,
+} from "./sync/broadcast";
 import type { ApiResponse, ItemStatus } from "shared/dist";
 import type { Database } from "bun:sqlite";
 
@@ -172,6 +186,7 @@ export const app = new Hono<{ Variables: AppVariables }>()
         });
     })
 
+    .route("/", wsApp)
     .route("/api/v1", createApiRoutes(listsService, sectionsService, itemsService, sessionsService, config))
 
     .notFound(notFoundHandler);
@@ -210,6 +225,7 @@ function createApiRoutes(
             }
             try {
                 const list = listsService.create(body.name, body.icon);
+                broadcastListCreated(list);
                 return c.json<ApiResponse>({ success: true, data: list }, 201);
             } catch (err) {
                 const message = err instanceof Error ? err.message : "Failed to create list";
@@ -228,6 +244,7 @@ function createApiRoutes(
             if (!list) {
                 return c.json<ApiResponse>({ success: false, error: "List not found" }, 404);
             }
+            broadcastListUpdated(list);
             return c.json<ApiResponse>({ success: true, data: list });
         })
 
@@ -257,6 +274,7 @@ function createApiRoutes(
             if (!list) {
                 return c.json<ApiResponse>({ success: false, error: "List not found" }, 404);
             }
+            broadcastListUpdated(list);
             return c.json<ApiResponse>({ success: true, data: list });
         })
 
@@ -285,6 +303,7 @@ function createApiRoutes(
                 return c.json<ApiResponse>({ success: false, error: "Name must be 1-100 characters" }, 400);
             }
             const section = sectionsService.create(listId, body.name);
+            broadcastSectionCreated(section);
             return c.json<ApiResponse>({ success: true, data: section }, 201);
         })
 
@@ -310,6 +329,7 @@ function createApiRoutes(
             if (!section) {
                 return c.json<ApiResponse>({ success: false, error: "Section not found" }, 404);
             }
+            broadcastSectionUpdated(section);
             return c.json<ApiResponse>({ success: true, data: section });
         })
 
@@ -322,12 +342,14 @@ function createApiRoutes(
             if (!deleted) {
                 return c.json<ApiResponse>({ success: false, error: "Section not found" }, 404);
             }
+            broadcastSectionDeleted(id);
             return c.json<ApiResponse>({ success: true });
         })
 
         .post("/sections/reorder", async (c) => {
             const body = await c.req.json<{ ids: number[] }>();
             sectionsService.reorder(body.ids);
+            broadcastSectionReordered(body.ids);
             return c.json<ApiResponse>({ success: true });
         })
 
@@ -350,6 +372,7 @@ function createApiRoutes(
                 return c.json<ApiResponse>({ success: false, error: "Name must be 1-200 characters" }, 400);
             }
             const item = itemsService.create(sectionId, body.name, body.description, body.quantity);
+            broadcastItemCreated(item);
             return c.json<ApiResponse>({ success: true, data: item }, 201);
         })
 
@@ -386,6 +409,7 @@ function createApiRoutes(
             if (!item) {
                 return c.json<ApiResponse>({ success: false, error: "Item not found" }, 404);
             }
+            broadcastItemUpdated(item);
             return c.json<ApiResponse>({ success: true, data: item });
         })
 
@@ -398,6 +422,7 @@ function createApiRoutes(
             if (!deleted) {
                 return c.json<ApiResponse>({ success: false, error: "Item not found" }, 404);
             }
+            broadcastItemDeleted(id);
             return c.json<ApiResponse>({ success: true });
         })
 
@@ -411,6 +436,7 @@ function createApiRoutes(
             if (!item) {
                 return c.json<ApiResponse>({ success: false, error: "Item not found" }, 404);
             }
+            broadcastItemMoved(item);
             return c.json<ApiResponse>({ success: true, data: item });
         })
 

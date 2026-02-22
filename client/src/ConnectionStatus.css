@@ -1,0 +1,35 @@
+.connection-status {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 0.5rem;
+    text-align: center;
+    font-size: 0.85rem;
+    z-index: 1000;
+    animation: slideDown 0.3s ease;
+}
+
+.connection-status.connecting {
+    background: #1a1a1a;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.connection-status.reconnecting {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+}
+
+.connection-status.disconnected {
+    background: rgba(244, 67, 54, 0.2);
+    color: #f44336;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}

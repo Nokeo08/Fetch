@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { listsApi, type ListWithCounts } from "./api/lists";
 import { sectionsApi, itemsApi, type SectionWithItems, type Item } from "./api/sections";
 import { templatesApi, type TemplateWithItems } from "./api/templates";
+import { useRealtimeUpdates } from "./useRealtimeUpdates";
+import ConnectionStatus from "./ConnectionStatus";
 import "./ListDetail.css";
 
 type Toast = {
@@ -24,6 +26,8 @@ export default function ListDetail() {
     const [sections, setSections] = useState<SectionWithItems[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [toast, setToast] = useState<Toast | null>(null);
+
+    useRealtimeUpdates(setSections);
 
     const [showSectionModal, setShowSectionModal] = useState(false);
     const [showEditSectionModal, setShowEditSectionModal] = useState(false);
@@ -624,6 +628,7 @@ export default function ListDetail() {
 
     return (
         <div className="list-detail-page">
+            <ConnectionStatus />
             <div className="list-detail-header">
                 <button className="back-btn" onClick={() => navigate("/")}>
                     ← Back
