@@ -1,197 +1,174 @@
 # Agent Guidelines for Fetch
 
-> This is a TypeScript monorepo using Bun, Hono, Vite, React, and Turbo.
+> A TypeScript monorepo using Bun, Hono, Vite, React, and Turbo. Self-hosted shopping list PWA.
 
-## Build Commands
-
-```bash
-# Install dependencies
-bun install
-
-# Development (all workspaces)
-bun run dev
-
-# Development (specific workspace)
-bun run dev:client    # Vite React frontend
-bun run dev:server    # Hono backend
-```
-
-## Build Commands
+## Commands
 
 ```bash
-# Build all workspaces
-bun run build
+# Development
+bun run dev              # All workspaces
+bun run dev:client       # Frontend only
+bun run dev:server       # Backend only
+bun run kill             # Stop lingering dev processes
 
-# Build specific workspace
-bun run build:client
-bun run build:server
+# Build
+bun run build            # All workspaces
+bun run build --filter=shared  # After modifying shared types
 
-# Build shared only (required after modifying shared types)
-bun run build --filter=shared
-```
-
-## Lint/Type-check Commands
-
-```bash
-# Lint all workspaces
+# Lint & Type-check
 bun run lint
-
-# Lint specific workspace
-bun run lint --filter=client
-
-# Type check all workspaces
 bun run type-check
+
+# Test
+bun run test             # All tests via Turbo
+bun test                 # Run directly with Bun
+bun test src/file.test.ts    # Single test file
+bun test -t "pattern"        # Tests matching pattern
+bun test --watch             # Watch mode
+bun test --coverage          # With coverage
 ```
 
-## Test Commands
-
-```bash
-# Run all tests (via Turbo)
-bun run test
-
-# Run tests in specific workspace
-cd client && bun test
-cd server && bun test
-
-# Run single test file
-bun test src/utils.test.ts
-
-# Run tests matching pattern
-bun test -t "test name pattern"
-
-# Run with watch mode
-bun test --watch
-
-# Run with coverage
-bun test --coverage
-```
-
-## Code Style Guidelines
+## Code Style
 
 ### Formatting
 - **Indentation**: 4 spaces
 - **Quotes**: Double quotes for strings
 - **Semicolons**: Required
-- **Line width**: No strict limit, keep readable
-- **Trailing commas**: Use where appropriate (multiline)
+- **Comments**: No comments unless explicitly requested
 
 ### Imports
-- Use `type` keyword for type imports: `import type { Foo } from "bar"`
-- External imports first, then internal/workspace imports
-- React imports: `import { useState } from "react"`
-- Workspace imports use package name with `/dist`: `import type { ApiResponse } from "shared/dist"`
-- Group imports logically with blank lines between groups
+```typescript
+// External imports first
+import { useState } from "react";
+import type { Foo } from "bar";  // Use 'type' keyword for type imports
 
-### Naming Conventions
-- **Variables/functions**: camelCase (`myVariable`, `myFunction`)
+// Blank line, then workspace imports
+import type { ApiResponse } from "shared/dist";
+```
+
+### Naming
+- **Variables/functions**: camelCase (`myVariable`)
 - **Components**: PascalCase (`MyComponent`)
-- **Types**: PascalCase (`UserData`, `ApiResponse`)
+- **Types**: PascalCase (`UserData`)
 - **Files**: camelCase for utilities, PascalCase for components
-- **Constants**: UPPER_SNAKE_CASE for true constants (`SERVER_URL`)
+- **Constants**: UPPER_SNAKE_CASE (`SERVER_URL`)
 
 ### TypeScript
-- `strict: true` enabled in all tsconfig files
-- `verbatimModuleSyntax: true` - use `import type` for types
-- `noUncheckedIndexedAccess: true` - array access may be undefined
+- `strict: true`, `verbatimModuleSyntax: true`, `noUncheckedIndexedAccess: true`
 - Use explicit return types for exported functions
-- Prefer `type` over `interface` for object shapes
-- Use `satisfies` operator when appropriate
-- Export types using `export type { Foo }` when re-exporting
+- Prefer `type` over `interface`
+- Array access may be undefined: `arr[0]` needs null check
 
 ### Error Handling
-- Always handle Promise rejections with try/catch
-- Throw descriptive errors with context
-- Use type guards for error narrowing: `if (err instanceof Error)`
-- Check response.ok before parsing JSON in API calls
-- Log errors appropriately before throwing
+```typescript
+// Always handle Promise rejections
+try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+} catch (err) {
+    // Use type guard for error narrowing
+    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error(message);
+}
+```
 
-### React Patterns
-- Use functional components with hooks
-- Prefer `useMutation` from @tanstack/react-query for API calls
-- Use `StrictMode` in development
-- Handle loading, error, and success states explicitly
-- Use type assertions for API response types: `const res: ApiResponse = await req.json()`
+## API Routes (`server/src/index.ts`)
 
-### Hono Server Patterns
-- Export the Hono app as default for RPC client usage
-- Use `.use(cors())` for CORS support
-- Chain route definitions fluently
-- Return typed responses using shared types
-- Export `AppType` for RPC client type inference
+### Route Structure
+1. **Public routes**: Login, logout, health - registered on `app`
+2. **Protected routes**: All `/api/v1/*` - defined inside `createApiRoutes()`
 
-### API Routes
-
-All API routes are defined in `server/src/index.ts`:
-
-1. **Public routes** (no auth): Login, logout, health checks - registered directly on `app`
-2. **Protected routes** (require auth): All `/api/v1/*` routes - defined inside `createApiRoutes()`
-
-#### Adding New API Endpoints
-
-**Always add new endpoints inside `createApiRoutes()`:**
-
+### Adding Endpoints
 ```typescript
 // ✅ CORRECT - inside createApiRoutes, relative path
 .get("/my-endpoint", (c) => { ... })
 
-// ❌ WRONG - on app, full path (will be unreachable due to notFound handler)
+// ❌ WRONG - on app, full path (unreachable due to notFound handler)
 app.get("/api/v1/my-endpoint", (c) => { ... })
 ```
 
-**Route paths inside `createApiRoutes` should NOT include `/api/v1` prefix:**
-- Use `/templates` not `/api/v1/templates`
-- Use `/lists/:id` not `/api/v1/lists/:id`
+- Paths inside `createApiRoutes` should NOT include `/api/v1` prefix
+- Auth is applied globally - no need for `.use(requireAuth(...))` on individual routes
+- After adding routes: run tests, manually test, add integration tests to `server/src/index.test.ts`
 
-**Auth is applied globally** - don't add `.use(requireAuth(...))` to individual routes inside `createApiRoutes`.
+## Database Migrations (`server/src/db/migrations.ts`)
 
-#### Testing New Routes
-
-After adding new API routes:
-1. Run existing tests: `bun test`
-2. **Manually test the new endpoint** with the dev server running
-3. Add integration tests for new routes to `server/src/index.test.ts`
-
-### Project Structure
-```
-client/          # React + Vite frontend
-  src/
-    App.tsx      # Main application component
-    main.tsx     # Entry point with providers
-server/          # Hono backend
-  src/
-    index.ts     # Hono app and routes
-    client.ts    # RPC client type exports
-shared/          # Shared types/utilities
-  src/
-    types/       # TypeScript definitions
-    index.ts     # Re-exports
+```typescript
+{
+    version: 4,
+    name: "add_new_column",
+    up: (db: Database) => {
+        if (!hasColumn(db, "table", "column")) {
+            db.exec("ALTER TABLE table ADD COLUMN column TEXT");
+        }
+    },
+    verify: (db: Database) => hasColumn(db, "table", "column"),  // Required for critical migrations
+    down: "ALTER TABLE table DROP COLUMN column",
+}
 ```
 
-### Workspace Dependencies
-- Use `workspace:*` protocol for internal deps
-- Shared must be built before client/server can use it
-- Import from `shared/dist` for compiled output
-- Run `bun run build --filter=shared` after modifying shared types
+- Always add `verify` function to prevent silent failures
+- Update `SCHEMA_VERSION` in `schema.ts`
+
+## React Patterns
+
+### Modals
+```typescript
+const modalRef = useRef<HTMLDivElement>(null);
+
+useEffect(() => {
+    if (showModal && modalRef.current) {
+        modalRef.current.focus();  // Focus for keyboard events
+    }
+}, [showModal]);
+
+// Modal needs tabIndex for keyboard events
+<div ref={modalRef} tabIndex={-1} onKeyDown={(e) => {
+    if (e.key === "Enter") handleSave();
+    if (e.key === "Escape") closeModal();
+}}>
+```
+
+### Forms
+- Use `useState` for form state
+- Handle `onKeyDown` for Enter key submission
+- Disable submit button when form invalid or submitting
+
+## Project Structure
+
+```
+client/src/          # React + Vite frontend
+  api/               # API client modules
+  App.tsx            # Main component
+  main.tsx           # Entry point with routing
+server/src/          # Hono backend
+  db/                # Schema and migrations
+  services/          # Business logic (lists, sections, items, templates)
+  middleware/        # Auth, logging, error handling
+  index.ts           # App and routes
+shared/src/types/    # Shared TypeScript definitions
+stories/             # Feature specifications with acceptance criteria
+```
 
 ## Environment Variables
 
-- **Client**: Use `import.meta.env.VITE_*` (must start with VITE_)
-- **Server**: Use `process.env.*` or `Bun.env.*`
-- Define in `.env` files at workspace root
-- Default values: `const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000"`
+- **Client**: `import.meta.env.VITE_*` (must start with VITE_)
+- **Server**: `process.env.*` or `Bun.env.*`
+- Never commit `.env` files
 
 ## Pre-commit Checklist
 
-1. `bun run build` - ensure no build errors
-2. `bun run lint` - fix any linting issues
+1. `bun run build` - no build errors
+2. `bun run lint` - fix linting issues
 3. `bun run type-check` - verify type safety
-4. `bun run test` - ensure tests pass
+4. `bun run test` - all tests pass
 
 ## Important Notes
 
 - Always build `shared` before running client/server if types changed
 - Client uses Vite, Server uses Bun runtime
 - Use Hono's RPC client (`hcWithType`) for type-safe API calls
-- Never commit `.env` files or secrets
 - Bun is the package manager - don't use npm/yarn
-- Postinstall script auto-builds shared and server packages
+- The user prefers "Add" over "Create" in UI verbiage
+- Story files in `/stories/*.md` define acceptance criteria for features
