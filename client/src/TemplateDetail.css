@@ -120,22 +120,17 @@
     color: rgba(255, 255, 255, 0.3);
     font-size: 1rem;
     cursor: grab;
+    flex-shrink: 0;
 }
 
 .template-item-row .item-drag-handle:active {
     cursor: grabbing;
 }
 
-.template-item-row .item-content {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
 .template-item-row .item-name {
+    flex: 1;
     color: rgba(255, 255, 255, 0.87);
+    min-width: 0;
 }
 
 .template-item-row .item-quantity {
@@ -149,6 +144,7 @@
     background: #333;
     border-radius: 4px;
     color: rgba(255, 255, 255, 0.6);
+    flex-shrink: 0;
 }
 
 .template-item-row .item-actions {

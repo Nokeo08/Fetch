@@ -290,15 +290,13 @@ export default function TemplateDetail() {
                             onDragEnd={handleItemDragEnd}
                         >
                             <span className="item-drag-handle">⋮</span>
-                            <div className="item-content">
-                                <span className="item-name">{item.name}</span>
-                                {item.quantity && (
-                                    <span className="item-quantity"> ({item.quantity})</span>
-                                )}
-                                {item.sectionName && (
-                                    <span className="item-section">{item.sectionName}</span>
-                                )}
-                            </div>
+                            <span className="item-name">
+                                {item.name}
+                                {item.quantity && <span className="item-quantity"> ({item.quantity})</span>}
+                            </span>
+                            {item.sectionName && (
+                                <span className="item-section">{item.sectionName}</span>
+                            )}
                             <div className="item-actions" onClick={(e) => e.stopPropagation()}>
                                 <button
                                     className="item-edit-btn"
