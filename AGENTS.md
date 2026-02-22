@@ -119,6 +119,38 @@ bun test --coverage
 - Return typed responses using shared types
 - Export `AppType` for RPC client type inference
 
+### API Routes
+
+All API routes are defined in `server/src/index.ts`:
+
+1. **Public routes** (no auth): Login, logout, health checks - registered directly on `app`
+2. **Protected routes** (require auth): All `/api/v1/*` routes - defined inside `createApiRoutes()`
+
+#### Adding New API Endpoints
+
+**Always add new endpoints inside `createApiRoutes()`:**
+
+```typescript
+// ✅ CORRECT - inside createApiRoutes, relative path
+.get("/my-endpoint", (c) => { ... })
+
+// ❌ WRONG - on app, full path (will be unreachable due to notFound handler)
+app.get("/api/v1/my-endpoint", (c) => { ... })
+```
+
+**Route paths inside `createApiRoutes` should NOT include `/api/v1` prefix:**
+- Use `/templates` not `/api/v1/templates`
+- Use `/lists/:id` not `/api/v1/lists/:id`
+
+**Auth is applied globally** - don't add `.use(requireAuth(...))` to individual routes inside `createApiRoutes`.
+
+#### Testing New Routes
+
+After adding new API routes:
+1. Run existing tests: `bun test`
+2. **Manually test the new endpoint** with the dev server running
+3. Add integration tests for new routes to `server/src/index.test.ts`
+
 ### Project Structure
 ```
 client/          # React + Vite frontend
