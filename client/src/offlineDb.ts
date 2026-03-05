@@ -176,4 +176,43 @@ export const offlineDb = {
             }),
         );
     },
+
+    async setPreference(key: string, value: unknown): Promise<void> {
+        const database = await openDB();
+        const tx = database.transaction("preferences", "readwrite");
+        const store = tx.objectStore("preferences");
+
+        return new Promise((resolve, reject) => {
+            const request = store.put({ key, value });
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async getPreference<T>(key: string): Promise<T | null> {
+        const database = await openDB();
+        const tx = database.transaction("preferences", "readonly");
+        const store = tx.objectStore("preferences");
+
+        return new Promise((resolve, reject) => {
+            const request = store.get(key);
+            request.onsuccess = () => {
+                const result = request.result;
+                resolve(result ? (result.value as T) : null);
+            };
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    async removePreference(key: string): Promise<void> {
+        const database = await openDB();
+        const tx = database.transaction("preferences", "readwrite");
+        const store = tx.objectStore("preferences");
+
+        return new Promise((resolve, reject) => {
+            const request = store.delete(key);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    },
 };

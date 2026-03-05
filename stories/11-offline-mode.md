@@ -22,8 +22,8 @@ As a user, I want to use the app without an internet connection so that I can ma
 
 ### Offline Storage
 - [x] Store current list data in IndexedDB or equivalent
-- [ ] Store user preferences locally
-- [ ] Sync data when connection restored
+- [x] Store user preferences locally
+- [x] Sync data when connection restored
 - [x] Queue operations while offline
 - [x] Persist queue across browser sessions
 - [x] Clear queue after successful sync
@@ -51,7 +51,7 @@ Queue item format:
 - [x] Detect when connection restored
 - [x] Show sync in progress indicator
 - [x] Send queued operations to server
-- [ ] Apply server updates to local storage
+- [x] Apply server updates to local storage
 - [x] Handle conflicts (see Story 10)
 - [x] Retry failed operations with exponential backoff
 - [x] Max retries before showing error

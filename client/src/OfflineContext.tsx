@@ -8,6 +8,7 @@ import {
     type ReactNode,
 } from "react";
 import { operationQueue, type QueuedOperation, type OperationType } from "./operationQueue";
+import { offlineDb, type ShoppingList, type Section, type Item } from "./offlineDb";
 
 export type OfflineStatus = "online" | "offline" | "syncing";
 
@@ -18,6 +19,8 @@ type OfflineContextType = {
     queueOperation: (type: OperationType, data: unknown) => Promise<void>;
     syncNow: () => Promise<void>;
     isOnline: boolean;
+    savePreference: (key: string, value: unknown) => Promise<void>;
+    getPreference: <T>(key: string) => Promise<T | null>;
 };
 
 const OfflineContext = createContext<OfflineContextType>({
@@ -27,9 +30,17 @@ const OfflineContext = createContext<OfflineContextType>({
     queueOperation: async () => {},
     syncNow: async () => {},
     isOnline: true,
+    savePreference: async () => {},
+    getPreference: async () => null,
 });
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
+
+type ApiResponse<T> = {
+    success: boolean;
+    data?: T;
+    error?: string;
+};
 
 async function fetchApi<T>(path: string, options?: RequestInit): Promise<T> {
     const res = await fetch(`${SERVER_URL}${path}`, {
@@ -41,6 +52,42 @@ async function fetchApi<T>(path: string, options?: RequestInit): Promise<T> {
         },
     });
     return res.json() as Promise<T>;
+}
+
+async function syncServerDataToLocal(): Promise<void> {
+    try {
+        const [listsRes, sectionsRes] = await Promise.all([
+            fetchApi<ApiResponse<ShoppingList[]>>("/api/v1/lists"),
+            fetchApi<ApiResponse<Section[]>>("/api/v1/lists/-1/sections").catch(() => ({ success: true, data: [] as Section[] })),
+        ]);
+
+        if (listsRes.success && listsRes.data) {
+            await offlineDb.saveLists(listsRes.data);
+        }
+
+        if (sectionsRes.success && sectionsRes.data) {
+            await offlineDb.saveSections(sectionsRes.data);
+
+            const allItems: Item[] = [];
+            for (const section of sectionsRes.data) {
+                try {
+                    const itemsRes = await fetchApi<ApiResponse<Item[]>>(`/api/v1/sections/${section.id}/items`);
+                    if (itemsRes.success && itemsRes.data) {
+                        allItems.push(...itemsRes.data);
+                    }
+                } catch {
+                    // Ignore errors for individual section items
+                }
+            }
+            if (allItems.length > 0) {
+                await offlineDb.saveItems(allItems);
+            }
+        }
+
+        console.log("[Offline] Synced server data to local storage");
+    } catch (err) {
+        console.error("[Offline] Failed to sync server data:", err);
+    }
 }
 
 export function OfflineProvider({ children }: { children: ReactNode }) {
@@ -134,6 +181,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
             const result = await operationQueue.processQueue(processOperation);
 
             if (result.success > 0 || result.failed === 0) {
+                await syncServerDataToLocal();
                 setLastSyncTime(new Date());
             }
         } catch (err) {
@@ -154,10 +202,19 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
         }
     }, [isOnline, syncNow, updatePendingCount]);
 
+    const savePreference = useCallback(async (key: string, value: unknown) => {
+        await offlineDb.setPreference(key, value);
+    }, []);
+
+    const getPreference = useCallback(async <T,>(key: string): Promise<T | null> => {
+        return offlineDb.getPreference<T>(key);
+    }, []);
+
     useEffect(() => {
-        const handleOnline = () => {
+        const handleOnline = async () => {
             setIsOnline(true);
             setStatus("online");
+            await syncServerDataToLocal();
             syncNow();
         };
 
@@ -168,6 +225,10 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
 
         window.addEventListener("online", handleOnline);
         window.addEventListener("offline", handleOffline);
+
+        if (navigator.onLine) {
+            syncServerDataToLocal();
+        }
 
         return () => {
             window.removeEventListener("online", handleOnline);
@@ -198,6 +259,8 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
                 queueOperation,
                 syncNow,
                 isOnline,
+                savePreference,
+                getPreference,
             }}
         >
             {children}
