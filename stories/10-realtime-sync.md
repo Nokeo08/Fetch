@@ -148,4 +148,4 @@ socket.onmessage = (event) => {
 - [x] Reconnection works automatically
 - [x] Connection status visible in UI
 - [x] Multiple clients see updates simultaneously
-- [ ] Tests verify sync behavior
+- [x] Tests verify sync behavior

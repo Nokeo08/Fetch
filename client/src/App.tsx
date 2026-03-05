@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 import Lists from "./Lists";
 import ConnectionStatus from "./ConnectionStatus";
+import OfflineBanner from "./OfflineBanner";
 import "./App.css";
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
     return (
         <div className="app">
             <ConnectionStatus />
+            <OfflineBanner />
             <header className="app-header">
                 <h1>Fetch</h1>
                 <div className="header-nav">

@@ -166,7 +166,7 @@ export default function ListDetail() {
         try {
             const res = await sectionsApi.create(listId, sectionName.trim());
             if (res.success && res.data) {
-                setSections((prev) => [...prev, { ...res.data!, items: [] }]);
+                // Don't do optimistic update - rely on WebSocket for consistency
                 setShowSectionModal(false);
                 showToast("Section added");
             } else {

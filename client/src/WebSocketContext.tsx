@@ -62,8 +62,10 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     const connect = useCallback(() => {
         if (!mountedRef.current) return;
 
-        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const wsUrl = `${protocol}//${window.location.host}/ws`;
+        const wsUrl = import.meta.env.VITE_WS_URL || (() => {
+            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+            return `${protocol}//${window.location.host}/ws`;
+        })();
 
         try {
             const ws = new WebSocket(wsUrl);

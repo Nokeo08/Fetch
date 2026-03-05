@@ -10,8 +10,17 @@ import Templates from "./Templates.tsx";
 import TemplateDetail from "./TemplateDetail.tsx";
 import { AuthProvider, useAuth } from "./AuthContext.tsx";
 import { WebSocketProvider } from "./WebSocketContext.tsx";
+import { OfflineProvider } from "./OfflineContext.tsx";
 
 const queryClient = new QueryClient();
+
+if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch((err) => {
+            console.error("[SW] Registration failed:", err);
+        });
+    });
+}
 
 const rootElement = document.getElementById("root");
 
@@ -92,9 +101,11 @@ function Main() {
             <QueryClientProvider client={queryClient}>
                 <BrowserRouter>
                     <AuthProvider>
-                        <WebSocketProvider>
-                            <AppRoutes />
-                        </WebSocketProvider>
+                        <OfflineProvider>
+                            <WebSocketProvider>
+                                <AppRoutes />
+                            </WebSocketProvider>
+                        </OfflineProvider>
                     </AuthProvider>
                 </BrowserRouter>
             </QueryClientProvider>

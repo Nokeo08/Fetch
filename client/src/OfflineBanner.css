@@ -1,0 +1,47 @@
+.offline-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 8px 16px;
+    font-size: 14px;
+    color: white;
+    text-align: center;
+}
+
+.offline-banner.offline {
+    background-color: #dc2626;
+}
+
+.offline-banner.syncing {
+    background-color: #2563eb;
+}
+
+.offline-banner.online {
+    background-color: #059669;
+}
+
+.sync-button {
+    padding: 4px 12px;
+    border: none;
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.sync-button:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.sync-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.last-sync {
+    font-size: 12px;
+    opacity: 0.8;
+}

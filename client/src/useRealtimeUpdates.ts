@@ -61,11 +61,14 @@ export function useRealtimeUpdates(
 
                         const targetSection = updated.find((s) => s.id === item.sectionId);
                         if (targetSection) {
-                            updated = updated.map((s) =>
-                                s.id === item.sectionId
-                                    ? { ...s, items: [...s.items, item] }
-                                    : s
-                            );
+                            const itemExists = targetSection.items.some((i) => i.id === item.id);
+                            if (!itemExists) {
+                                updated = updated.map((s) =>
+                                    s.id === item.sectionId
+                                        ? { ...s, items: [...s.items, item] }
+                                        : s
+                                );
+                            }
                         }
 
                         return updated;
@@ -75,7 +78,11 @@ export function useRealtimeUpdates(
 
                 case "section_created": {
                     const section = message.data as SectionWithItems;
-                    setSections((prev) => [...prev, { ...section, items: [] }]);
+                    setSections((prev) => {
+                        const exists = prev.some((s) => s.id === section.id);
+                        if (exists) return prev;
+                        return [...prev, { ...section, items: [] }];
+                    });
                     break;
                 }
 
