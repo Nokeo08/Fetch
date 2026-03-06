@@ -26,6 +26,7 @@ import {
     constantTimeEquals,
     type AuthVariables,
 } from "./middleware";
+import { getCookie } from "hono/cookie";
 import { wsApp } from "./websocket";
 import {
     broadcastListCreated,
@@ -179,10 +180,26 @@ export const app = new Hono<{ Variables: AppVariables }>()
         return c.json<ApiResponse>({ success: true, data: { message: "Logged out successfully" } });
     })
 
-    .get("/api/me", requireAuth(sessionsService, config), (c) => {
+    .get("/api/me", async (c) => {
+        if (config.auth.disabled) {
+            return c.json<ApiResponse>({
+                success: true,
+                data: { authenticated: true },
+            });
+        }
+
+        const sessionToken = getCookie(c, "session");
+        if (!sessionToken) {
+            return c.json<ApiResponse>({
+                success: true,
+                data: { authenticated: false },
+            });
+        }
+
+        const valid = sessionsService.isValid(sessionToken);
         return c.json<ApiResponse>({
             success: true,
-            data: { authenticated: true },
+            data: { authenticated: valid },
         });
     })
 
