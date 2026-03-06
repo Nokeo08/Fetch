@@ -7,6 +7,7 @@ import {
     useRef,
     type ReactNode,
 } from "react";
+import { useAuth } from "./AuthContext";
 import { operationQueue, type QueuedOperation, type OperationType } from "./operationQueue";
 import { offlineDb, type ShoppingList, type Section, type Item } from "./offlineDb";
 
@@ -91,6 +92,7 @@ async function syncServerDataToLocal(): Promise<void> {
 }
 
 export function OfflineProvider({ children }: { children: ReactNode }) {
+    const { isAuthenticated } = useAuth();
     const [status, setStatus] = useState<OfflineStatus>("online");
     const [pendingCount, setPendingCount] = useState(0);
     const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
@@ -170,7 +172,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const syncNow = useCallback(async () => {
-        if (!isOnline || syncInProgressRef.current) {
+        if (!isOnline || syncInProgressRef.current || !isAuthenticated) {
             return;
         }
 
@@ -197,10 +199,10 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
         await operationQueue.add(type, data);
         await updatePendingCount();
 
-        if (isOnline) {
+        if (isOnline && isAuthenticated) {
             await syncNow();
         }
-    }, [isOnline, syncNow, updatePendingCount]);
+    }, [isOnline, syncNow, updatePendingCount, isAuthenticated]);
 
     const savePreference = useCallback(async (key: string, value: unknown) => {
         await offlineDb.setPreference(key, value);
@@ -214,8 +216,10 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
         const handleOnline = async () => {
             setIsOnline(true);
             setStatus("online");
-            await syncServerDataToLocal();
-            syncNow();
+            if (isAuthenticated) {
+                await syncServerDataToLocal();
+                syncNow();
+            }
         };
 
         const handleOffline = () => {
@@ -226,7 +230,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
         window.addEventListener("online", handleOnline);
         window.addEventListener("offline", handleOffline);
 
-        if (navigator.onLine) {
+        if (navigator.onLine && isAuthenticated) {
             syncServerDataToLocal();
         }
 
@@ -234,7 +238,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
             window.removeEventListener("online", handleOnline);
             window.removeEventListener("offline", handleOffline);
         };
-    }, [syncNow]);
+    }, [syncNow, isAuthenticated]);
 
     useEffect(() => {
         updatePendingCount();
