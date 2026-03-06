@@ -57,28 +57,38 @@ async function fetchApi<T>(path: string, options?: RequestInit): Promise<T> {
 
 async function syncServerDataToLocal(): Promise<void> {
     try {
-        const [listsRes, sectionsRes] = await Promise.all([
-            fetchApi<ApiResponse<ShoppingList[]>>("/api/v1/lists"),
-            fetchApi<ApiResponse<Section[]>>("/api/v1/lists/-1/sections").catch(() => ({ success: true, data: [] as Section[] })),
-        ]);
+        const listsRes = await fetchApi<ApiResponse<ShoppingList[]>>("/api/v1/lists");
 
         if (listsRes.success && listsRes.data) {
             await offlineDb.saveLists(listsRes.data);
-        }
 
-        if (sectionsRes.success && sectionsRes.data) {
-            await offlineDb.saveSections(sectionsRes.data);
-
+            const allSections: Section[] = [];
             const allItems: Item[] = [];
-            for (const section of sectionsRes.data) {
+
+            for (const list of listsRes.data) {
                 try {
-                    const itemsRes = await fetchApi<ApiResponse<Item[]>>(`/api/v1/sections/${section.id}/items`);
-                    if (itemsRes.success && itemsRes.data) {
-                        allItems.push(...itemsRes.data);
+                    const sectionsRes = await fetchApi<ApiResponse<Section[]>>(`/api/v1/lists/${list.id}/sections`);
+                    if (sectionsRes.success && sectionsRes.data) {
+                        allSections.push(...sectionsRes.data);
+
+                        for (const section of sectionsRes.data) {
+                            try {
+                                const itemsRes = await fetchApi<ApiResponse<Item[]>>(`/api/v1/sections/${section.id}/items`);
+                                if (itemsRes.success && itemsRes.data) {
+                                    allItems.push(...itemsRes.data);
+                                }
+                            } catch {
+                                // Ignore errors for individual section items
+                            }
+                        }
                     }
                 } catch {
-                    // Ignore errors for individual section items
+                    // Ignore errors for individual list sections
                 }
+            }
+
+            if (allSections.length > 0) {
+                await offlineDb.saveSections(allSections);
             }
             if (allItems.length > 0) {
                 await offlineDb.saveItems(allItems);
@@ -193,7 +203,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
             syncInProgressRef.current = false;
             await updatePendingCount();
         }
-    }, [isOnline, processOperation, updatePendingCount]);
+    }, [isOnline, isAuthenticated, processOperation, updatePendingCount]);
 
     const queueOperation = useCallback(async (type: OperationType, data: unknown) => {
         await operationQueue.add(type, data);
