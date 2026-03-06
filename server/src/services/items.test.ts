@@ -143,13 +143,63 @@ describe("ItemsService", () => {
             expect(breadEntry?.frequency).toBe(1);
         });
 
-        test("should search history", () => {
+        test("should search history with substring match", () => {
             itemsService.create(testSectionId, "Whole Milk");
             itemsService.create(testSectionId, "Skim Milk");
             itemsService.create(testSectionId, "Bread");
 
             const results = itemsService.searchHistory("milk");
             expect(results.length).toBe(2);
+        });
+
+        test("should return empty for short queries", () => {
+            itemsService.create(testSectionId, "Milk");
+            itemsService.create(testSectionId, "Bread");
+
+            expect(itemsService.searchHistory("m").length).toBe(0);
+            expect(itemsService.searchHistory("").length).toBe(0);
+        });
+
+        test("should search history with fuzzy matching", () => {
+            itemsService.create(testSectionId, "Milk");
+            itemsService.create(testSectionId, "Bread");
+            itemsService.create(testSectionId, "Mil");
+
+            const results = itemsService.searchHistory("mil");
+            expect(results.length).toBe(2);
+            expect(results[0]?.name).toBe("Milk");
+        });
+
+        test("should rank results by frequency when scores are equal", () => {
+            itemsService.create(testSectionId, "Low Freq");
+            itemsService.create(testSectionId, "High Freq");
+            itemsService.create(testSectionId, "High Freq");
+            itemsService.create(testSectionId, "High Freq");
+            itemsService.create(testSectionId, "Low Freq");
+
+            const results = itemsService.searchHistory(" Freq");
+            expect(results[0]?.name).toBe("High Freq");
+            expect(results[0]?.frequency).toBe(3);
+        });
+
+        test("should normalize special characters", () => {
+            itemsService.create(testSectionId, "Café");
+            itemsService.create(testSectionId, "Cafe");
+
+            const results = itemsService.searchHistory("cafe");
+            expect(results.length).toBe(2);
+        });
+
+        test("should limit results", () => {
+            itemsService.create(testSectionId, "Item 1");
+            itemsService.create(testSectionId, "Item 2");
+            itemsService.create(testSectionId, "Item 3");
+            itemsService.create(testSectionId, "Item 4");
+            itemsService.create(testSectionId, "Item 5");
+            itemsService.create(testSectionId, "Item 6");
+
+            const results = itemsService.searchHistory("Item", 3);
+            expect(results.length).toBe(3);
         });
     });
 });

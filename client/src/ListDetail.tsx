@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { listsApi, type ListWithCounts } from "./api/lists";
-import { sectionsApi, itemsApi, type SectionWithItems, type Item } from "./api/sections";
+import { sectionsApi, itemsApi, type SectionWithItems, type Item, type HistoryEntry } from "./api/sections";
 import { templatesApi, type TemplateWithItems } from "./api/templates";
 import { useRealtimeUpdates } from "./useRealtimeUpdates";
 import ConnectionStatus from "./ConnectionStatus";
+import { Autocomplete } from "./Autocomplete";
 import "./ListDetail.css";
 
 type Toast = {
@@ -287,13 +288,7 @@ export default function ListDetail() {
         try {
             const res = await itemsApi.create(sectionId, name);
             if (res.success && res.data) {
-                setSections((prev) =>
-                    prev.map((s) =>
-                        s.id === sectionId
-                            ? { ...s, items: [...s.items, res.data!] }
-                            : s
-                    )
-                );
+                // Rely on WebSocket for state update to avoid duplicates
                 setNewItemNames((prev) => ({ ...prev, [sectionId]: "" }));
             } else {
                 showToast(res.error || "Failed to add item", "error");
@@ -701,21 +696,22 @@ export default function ListDetail() {
 
                             <div className={`section-content ${collapsedSections.has(section.id) ? "collapsed" : ""}`}>
                                 <div className="add-item-form">
-                                    <input
-                                        type="text"
-                                        placeholder="Add item..."
+                                    <Autocomplete
                                         value={newItemNames[section.id] || ""}
-                                        onChange={(e) =>
+                                        onChange={(value) =>
                                             setNewItemNames((prev) => ({
                                                 ...prev,
-                                                [section.id]: e.target.value,
+                                                [section.id]: value,
                                             }))
                                         }
-                                        onKeyDown={(e) => {
-                                            if (e.key === "Enter") {
-                                                handleAddItem(section.id);
-                                            }
+                                        onSelect={(entry: HistoryEntry) => {
+                                            setNewItemNames((prev) => ({
+                                                ...prev,
+                                                [section.id]: entry.name,
+                                            }));
                                         }}
+                                        onSubmit={() => handleAddItem(section.id)}
+                                        placeholder="Add item..."
                                     />
                                     <button
                                         className="add-item-btn"

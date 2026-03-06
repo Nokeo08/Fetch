@@ -26,6 +26,16 @@ export type Item = {
     updatedAt: string;
 };
 
+export type HistoryEntry = {
+    id: number;
+    name: string;
+    sectionName: string | null;
+    description: string | null;
+    quantity: string | null;
+    frequency: number;
+    lastUsed: string;
+};
+
 export type SectionWithItems = Section & {
     items: Item[];
 };
@@ -102,4 +112,7 @@ export const itemsApi = {
             method: "POST",
             body: JSON.stringify({ targetSectionId }),
         }),
+
+    getSuggestions: (query: string, limit: number = 5) =>
+        fetchApi<HistoryEntry[]>(`/api/v1/suggestions?q=${encodeURIComponent(query)}&limit=${limit}`),
 };

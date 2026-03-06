@@ -12,53 +12,53 @@ As a user, I want the app to suggest items I've added before so that I can quick
 ## Acceptance Criteria
 
 ### Item History Tracking
-- [ ] Every unique item name stored in history table
-- [ ] Track frequency (how many times added)
-- [ ] Remember last section used for item
-- [ ] Remember last description and quantity
-- [ ] Update last_used timestamp on each add
-- [ ] History persists across sessions
+- [x] Every unique item name stored in history table
+- [x] Track frequency (how many times added)
+- [x] Remember last section used for item
+- [x] Remember last description and quantity
+- [x] Update last_used timestamp on each add
+- [x] History persists across sessions
 
 ### Fuzzy Search
-- [ ] Search activates when typing in item name field
-- [ ] Minimum 2 characters to trigger search
-- [ ] Fuzzy matching algorithm (Jaro, Levenshtein, etc.)
-- [ ] Character normalization (special chars to ASCII)
-- [ ] Case-insensitive matching
-- [ ] Results ranked by:
+- [x] Search activates when typing in item name field
+- [x] Minimum 2 characters to trigger search
+- [x] Fuzzy matching algorithm (Jaro, Levenshtein, etc.)
+- [x] Character normalization (special chars to ASCII)
+- [x] Case-insensitive matching
+- [x] Results ranked by:
   - Frequency of use
   - Recency of use
   - Match quality
 
 ### Suggestion Display
-- [ ] Dropdown below input field
-- [ ] Show top 5 matches maximum
-- [ ] Each suggestion shows:
+- [x] Dropdown below input field
+- [x] Show top 5 matches maximum
+- [x] Each suggestion shows:
   - Item name (bold matching parts)
   - Last used section
   - Frequency indicator (optional)
-- [ ] Click to select suggestion
-- [ ] Keyboard navigation (up/down arrows, enter to select, escape to close)
+- [x] Click to select suggestion
+- [x] Keyboard navigation (up/down arrows, enter to select, escape to close)
 
 ### Auto-Fill on Selection
-- [ ] Selecting suggestion fills:
+- [x] Selecting suggestion fills:
   - Item name
   - Section (if exists in current list)
   - Description (optional)
   - Quantity (optional)
-- [ ] User can edit auto-filled values
-- [ ] Cursor positioned at end of name
+- [x] User can edit auto-filled values
+- [x] Cursor positioned at end of name
 
 ### Debouncing
-- [ ] Search query debounced (300ms)
-- [ ] Cancel in-flight requests on new input
-- [ ] Loading indicator while searching
+- [x] Search query debounced (300ms)
+- [x] Cancel in-flight requests on new input
+- [x] Loading indicator while searching
 
 ### Edge Cases
-- [ ] No suggestions when input matches exactly
-- [ ] Empty state when no matches
-- [ ] Handle special characters in search
-- [ ] Mobile-friendly touch targets
+- [x] No suggestions when input matches exactly
+- [x] Empty state when no matches
+- [x] Handle special characters in search
+- [x] Mobile-friendly touch targets
 
 ## Technical Notes
 
@@ -178,10 +178,10 @@ LIMIT 5;
 
 ## Definition of Done
 
-- [ ] History tracked for all items
-- [ ] Fuzzy search works
-- [ ] Top 5 suggestions displayed
-- [ ] Keyboard navigation works
-- [ ] Auto-fill populates fields
-- [ ] Special characters normalized
-- [ ] Tests verify suggestion logic
+- [x] History tracked for all items
+- [x] Fuzzy search works
+- [x] Top 5 suggestions displayed
+- [x] Keyboard navigation works
+- [x] Auto-fill populates fields
+- [x] Special characters normalized
+- [x] Tests verify suggestion logic

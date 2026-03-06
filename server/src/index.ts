@@ -452,6 +452,13 @@ function createApiRoutes(
             return c.json<ApiResponse>({ success: true, data: history });
         })
 
+        .get("/suggestions", (c) => {
+            const query = c.req.query("q") || "";
+            const limit = parseInt(c.req.query("limit") || "5", 10);
+            const results = itemsService.searchHistory(query, limit);
+            return c.json<ApiResponse>({ success: true, data: results });
+        })
+
         .get("/history/search", (c) => {
             const query = c.req.query("q") || "";
             const limit = parseInt(c.req.query("limit") || "5", 10);

@@ -77,3 +77,149 @@ button:focus-visible {
     min-height: 100vh;
     color: rgba(255, 255, 255, 0.6);
 }
+
+.autocomplete-container {
+    position: relative;
+    flex: 1;
+}
+
+.autocomplete-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.autocomplete-input {
+    width: 100%;
+    flex: 1;
+}
+
+.autocomplete-loading {
+    position: absolute;
+    right: 10px;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #646cff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.autocomplete-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.autocomplete-suggestion {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #2a2a2a;
+    min-height: 44px;
+    touch-action: manipulation;
+}
+
+.autocomplete-suggestion:last-child {
+    border-bottom: none;
+}
+
+.autocomplete-suggestion:hover,
+.autocomplete-suggestion.selected {
+    background: #2a2a2a;
+}
+
+.suggestion-main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+}
+
+.suggestion-name {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.suggestion-name strong {
+    color: #646cff;
+    font-weight: 600;
+}
+
+.suggestion-section {
+    font-size: 0.75em;
+    color: rgba(255, 255, 255, 0.5);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.suggestion-frequency {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    margin-left: 8px;
+    flex-shrink: 0;
+    height: 16px;
+}
+
+.signal-bar {
+    width: 4px;
+    background: rgba(100, 108, 255, 0.3);
+    border-radius: 1px;
+}
+
+.signal-bar:nth-child(1) {
+    height: 4px;
+}
+
+.signal-bar:nth-child(2) {
+    height: 8px;
+}
+
+.signal-bar:nth-child(3) {
+    height: 12px;
+}
+
+.signal-bar.active {
+    background: #646cff;
+}
+
+@media (prefers-color-scheme: light) {
+    .autocomplete-dropdown {
+        background: #fff;
+        border-color: #ddd;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .autocomplete-suggestion {
+        border-bottom-color: #eee;
+    }
+
+    .autocomplete-suggestion:hover,
+    .autocomplete-suggestion.selected {
+        background: #f5f5f5;
+    }
+
+    .suggestion-section {
+        color: rgba(0, 0, 0, 0.5);
+    }
+}

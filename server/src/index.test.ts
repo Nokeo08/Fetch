@@ -1,8 +1,25 @@
 process.env.DISABLE_AUTH = "true";
 process.env.APP_PASSWORD = "test-password";
 
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect, beforeAll, afterAll } from "bun:test";
+import { Database } from "bun:sqlite";
+import { CREATE_TABLES, CREATE_INDEXES } from "./db/schema";
+
+process.env.DATABASE_PATH = ":memory:";
+
 import app from "./index";
+
+let db: Database;
+
+beforeAll(() => {
+    db = new Database(":memory:");
+    db.exec(CREATE_TABLES);
+    db.exec(CREATE_INDEXES);
+});
+
+afterAll(() => {
+    db?.close();
+});
 
 describe("HTTP Server", () => {
     describe("Health Endpoint", () => {

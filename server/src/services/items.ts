@@ -1,5 +1,6 @@
 import type { Database } from "bun:sqlite";
 import type { Item, ItemStatus, HistoryEntry } from "shared/dist";
+import { fuzzySearch, type ScoredEntry } from "../utils/fuzzy-search";
 
 type DbItem = {
     id: number;
@@ -172,13 +173,44 @@ export function createItemsService(db: Database) {
         },
 
         searchHistory(query: string, limit: number = 5): HistoryEntry[] {
-            const searchPattern = `%${query}%`;
-            const rows = db
-                .query<DbHistoryEntry, [string, string, number]>(
-                    "SELECT * FROM history WHERE name LIKE ? OR section_name LIKE ? ORDER BY frequency DESC, last_used DESC LIMIT ?"
-                )
-                .all(searchPattern, searchPattern, limit);
-            return rows.map(mapHistoryEntry);
+            if (!query || query.length < 2) return [];
+
+            const allHistory = db.query<DbHistoryEntry, []>("SELECT * FROM history").all();
+
+            const normalizedQuery = query.toLowerCase();
+            const seen = new Map<string, DbHistoryEntry>();
+
+            for (const row of allHistory) {
+                const normalizedName = row.name.toLowerCase();
+                if (!seen.has(normalizedName)) {
+                    seen.set(normalizedName, row);
+                } else {
+                    const existing = seen.get(normalizedName)!;
+                    existing.frequency += row.frequency;
+                    if (new Date(row.last_used) > new Date(existing.last_used)) {
+                        existing.last_used = row.last_used;
+                    }
+                }
+            }
+
+            const deduplicated = Array.from(seen.values());
+
+            const scored: ScoredEntry<DbHistoryEntry>[] = fuzzySearch(
+                query,
+                deduplicated,
+                (row) => row.name,
+                0.5
+            );
+
+            const ranked = scored.sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                const aFreq = a.item.frequency;
+                const bFreq = b.item.frequency;
+                if (bFreq !== aFreq) return bFreq - aFreq;
+                return new Date(b.item.last_used).getTime() - new Date(a.item.last_used).getTime();
+            });
+
+            return ranked.slice(0, limit).map((s) => mapHistoryEntry(s.item));
         },
     };
 }
