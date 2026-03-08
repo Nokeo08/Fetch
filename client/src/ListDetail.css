@@ -52,7 +52,7 @@
     padding: 0.5rem 1rem;
     background: #333;
     color: rgba(255, 255, 255, 0.87);
-    border: none;
+    border: 1px solid transparent;
     border-radius: 6px;
     cursor: pointer;
     font-size: 0.9rem;
@@ -61,6 +61,13 @@
 
 .template-btn:hover {
     background: #444;
+    border-color: transparent;
+}
+
+.template-btn:focus,
+.template-btn:focus-visible {
+    outline: none;
+    border-color: transparent;
 }
 
 .template-btn.secondary {
@@ -71,6 +78,7 @@
 .template-btn.secondary:hover {
     background: #3d4a5a;
 }
+
 
 .add-section-btn {
     display: flex;
@@ -172,6 +180,15 @@
     background: #4d4d3d;
 }
 
+.section-add-btn {
+    background: #2d3d2d;
+    color: #7dff7d;
+}
+
+.section-add-btn:hover {
+    background: #3d4d3d;
+}
+
 .section-edit-btn {
     background: #333;
     color: rgba(255, 255, 255, 0.87);
@@ -198,14 +215,15 @@
     display: none;
 }
 
-.add-item-form {
+.quick-add-bar {
     display: flex;
     gap: 0.5rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    align-items: flex-start;
 }
 
-.add-item-form input {
-    flex: 1;
+.quick-add-bar input,
+.quick-add-bar select {
     padding: 0.6rem 1rem;
     border: 1px solid #333;
     border-radius: 6px;
@@ -214,23 +232,47 @@
     font-size: 0.95rem;
 }
 
-.add-item-form input:focus {
+.quick-add-bar input:focus,
+.quick-add-bar select:focus {
     outline: none;
     border-color: #646cff;
 }
 
-.add-item-btn {
+.quick-add-quantity {
+    width: 4.5rem;
+    flex-shrink: 0;
+}
+
+.quick-add-description {
+    flex: 1;
+    min-width: 0;
+}
+
+.quick-add-section {
+    width: 8rem;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.quick-add-btn {
     padding: 0.6rem 1rem;
-    background: #333;
-    color: rgba(255, 255, 255, 0.87);
+    background: #646cff;
+    color: #fff;
     border: none;
     border-radius: 6px;
     cursor: pointer;
     font-size: 0.9rem;
+    flex-shrink: 0;
+    font-weight: 500;
 }
 
-.add-item-btn:hover {
-    background: #444;
+.quick-add-btn:hover {
+    background: #535bf2;
+}
+
+.quick-add-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .items-list {

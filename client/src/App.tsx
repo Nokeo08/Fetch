@@ -23,6 +23,9 @@ function App() {
                     <button className="nav-btn" onClick={() => navigate("/templates")}>
                         Templates
                     </button>
+                    <button className="nav-btn" onClick={() => navigate("/settings")}>
+                        Settings
+                    </button>
                     <button className="logout-btn" onClick={handleLogout}>
                         Logout
                     </button>

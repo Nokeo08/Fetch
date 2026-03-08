@@ -1,12 +1,6 @@
-process.env.DISABLE_AUTH = "true";
-process.env.APP_PASSWORD = "test-password";
-
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import { Database } from "bun:sqlite";
 import { CREATE_TABLES, CREATE_INDEXES } from "./db/schema";
-
-process.env.DATABASE_PATH = ":memory:";
-
 import app from "./index";
 
 let db: Database;
@@ -620,6 +614,547 @@ describe("Templates API", () => {
             expect(data.data.items).toHaveLength(1);
             expect(data.data.items[0]?.name).toBe("Milk");
             expect(data.data.items[0]?.sectionName).toBe("Dairy");
+        });
+    });
+});
+
+describe("Import/Export API", () => {
+    describe("GET /api/v1/export/summary", () => {
+        test("returns export summary with correct structure", async () => {
+            const res = await app.request("/api/v1/export/summary");
+            expect(res.status).toBe(200);
+
+            const data = (await res.json()) as {
+                success: boolean;
+                data: {
+                    lists: Array<{ id: number; name: string; icon: string; itemCount: number }>;
+                    templates: Array<{ id: number; name: string; itemCount: number }>;
+                    historyCount: number;
+                };
+            };
+            expect(data.success).toBe(true);
+            expect(Array.isArray(data.data.lists)).toBe(true);
+            expect(Array.isArray(data.data.templates)).toBe(true);
+            expect(typeof data.data.historyCount).toBe("number");
+        });
+    });
+
+    describe("POST /api/v1/export", () => {
+        test("exports all data with correct structure", async () => {
+            const res = await app.request("/api/v1/export", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ includeHistory: true }),
+            });
+            expect(res.status).toBe(200);
+
+            const data = (await res.json()) as {
+                success: boolean;
+                data: {
+                    version: string;
+                    exported_at: string;
+                    lists: Array<{ name: string; icon: string; sections: Array<{ name: string; items: unknown[] }> }>;
+                    templates: Array<{ name: string; items: unknown[] }>;
+                    history: unknown[];
+                };
+            };
+            expect(data.success).toBe(true);
+            expect(data.data.version).toBe("1.0.0");
+            expect(data.data.exported_at).toBeDefined();
+            expect(Array.isArray(data.data.lists)).toBe(true);
+            expect(Array.isArray(data.data.templates)).toBe(true);
+            expect(Array.isArray(data.data.history)).toBe(true);
+        });
+
+        test("exported lists contain sections and items", async () => {
+            const listRes = await app.request("/api/v1/lists", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Export Test List", icon: "🧪" }),
+            });
+            const listData = (await listRes.json()) as { data: { id: number } };
+            const listId = listData.data.id;
+
+            const sectionRes = await app.request(`/api/v1/lists/${listId}/sections`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Export Section" }),
+            });
+            const sectionData = (await sectionRes.json()) as { data: { id: number } };
+
+            await app.request(`/api/v1/sections/${sectionData.data.id}/items`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Export Item", description: "test desc", quantity: "3" }),
+            });
+
+            const res = await app.request("/api/v1/export", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ listIds: [listId], includeHistory: false }),
+            });
+            const data = (await res.json()) as {
+                data: {
+                    lists: Array<{
+                        name: string;
+                        icon: string;
+                        sections: Array<{
+                            name: string;
+                            items: Array<{ name: string; description: string | null; quantity: string | null; status: string }>;
+                        }>;
+                    }>;
+                };
+            };
+
+            expect(data.data.lists).toHaveLength(1);
+            const exportedList = data.data.lists[0]!;
+            expect(exportedList.name).toBe("Export Test List");
+            expect(exportedList.icon).toBe("🧪");
+            expect(exportedList.sections).toHaveLength(1);
+            expect(exportedList.sections[0]!.name).toBe("Export Section");
+            expect(exportedList.sections[0]!.items).toHaveLength(1);
+            expect(exportedList.sections[0]!.items[0]!.name).toBe("Export Item");
+            expect(exportedList.sections[0]!.items[0]!.description).toBe("test desc");
+            expect(exportedList.sections[0]!.items[0]!.quantity).toBe("3");
+            expect(exportedList.sections[0]!.items[0]!.status).toBe("active");
+        });
+
+        test("exports empty lists when listIds is empty array", async () => {
+            const res = await app.request("/api/v1/export", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ listIds: [], templateIds: [], includeHistory: false }),
+            });
+            expect(res.status).toBe(200);
+
+            const data = (await res.json()) as {
+                data: { lists: unknown[]; templates: unknown[]; history: unknown[] };
+            };
+            expect(data.data.lists).toHaveLength(0);
+            expect(data.data.templates).toHaveLength(0);
+            expect(data.data.history).toHaveLength(0);
+        });
+    });
+
+    describe("POST /api/v1/import/preview", () => {
+        test("returns preview of valid import data", async () => {
+            const importData = {
+                version: "1.0.0",
+                exported_at: new Date().toISOString(),
+                lists: [
+                    { name: "Preview List", icon: "📋", sections: [{ name: "Section 1", items: [{ name: "Item 1", description: null, quantity: null, status: "active" }] }] },
+                ],
+                templates: [
+                    { name: "Preview Template", items: [{ name: "T-Item", description: null, quantity: null, sectionName: null }] },
+                ],
+                history: [
+                    { name: "History Item", sectionName: null, description: null, quantity: null, frequency: 3 },
+                ],
+            };
+
+            const res = await app.request("/api/v1/import/preview", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(importData),
+            });
+            expect(res.status).toBe(200);
+
+            const data = (await res.json()) as {
+                success: boolean;
+                data: {
+                    listCount: number;
+                    templateCount: number;
+                    historyCount: number;
+                    existingListConflicts: string[];
+                    existingTemplateConflicts: string[];
+                };
+            };
+            expect(data.success).toBe(true);
+            expect(data.data.listCount).toBe(1);
+            expect(data.data.templateCount).toBe(1);
+            expect(data.data.historyCount).toBe(1);
+        });
+
+        test("rejects invalid JSON format", async () => {
+            const res = await app.request("/api/v1/import/preview", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: "not json",
+            });
+            expect(res.status).toBe(400);
+        });
+
+        test("rejects data with missing required fields", async () => {
+            const res = await app.request("/api/v1/import/preview", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ version: "1.0.0" }),
+            });
+            expect(res.status).toBe(400);
+
+            const data = (await res.json()) as { success: boolean; error: string };
+            expect(data.success).toBe(false);
+        });
+
+        test("rejects unsupported version", async () => {
+            const res = await app.request("/api/v1/import/preview", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    version: "99.0.0",
+                    exported_at: new Date().toISOString(),
+                    lists: [],
+                }),
+            });
+            expect(res.status).toBe(400);
+        });
+
+        test("detects conflicts with existing lists", async () => {
+            await app.request("/api/v1/lists", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: "Conflict Test List" }),
+            });
+
+            const importData = {
+                version: "1.0.0",
+                exported_at: new Date().toISOString(),
+                lists: [{ name: "Conflict Test List", icon: "📋", sections: [] }],
+                templates: [],
+                history: [],
+            };
+
+            const res = await app.request("/api/v1/import/preview", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(importData),
+            });
+            expect(res.status).toBe(200);
+
+            const data = (await res.json()) as {
+                data: { existingListConflicts: string[] };
+            };
+            expect(data.data.existingListConflicts.length).toBeGreaterThan(0);
+            expect(data.data.existingListConflicts).toContain("Conflict Test List");
+        });
+    });
+
+    describe("POST /api/v1/import", () => {
+        test("imports data in merge mode", async () => {
+            const importData = {
+                version: "1.0.0",
+                exported_at: new Date().toISOString(),
+                lists: [
+                    {
+                        name: "Imported Merge List",
+                        icon: "🆕",
+                        sections: [
+                            {
+                                name: "Imported Section",
+                                items: [
+                                    { name: "Imported Item 1", description: "desc1", quantity: "2", status: "active" },
+                                    { name: "Imported Item 2", description: null, quantity: null, status: "completed" },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+                templates: [
+                    {
+                        name: "Imported Template",
+                        items: [{ name: "Template Item 1", description: null, quantity: "1 box", sectionName: "Snacks" }],
+                    },
+                ],
+                history: [
+                    { name: "Imported History", sectionName: "Produce", description: "fresh", quantity: "1 bunch", frequency: 5 },
+                ],
+            };
+
+            const res = await app.request("/api/v1/import", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    data: importData,
+                    options: { mode: "merge", importLists: true, importTemplates: true, importHistory: true },
+                }),
+            });
+            expect(res.status).toBe(200);
+
+            const data = (await res.json()) as {
+                success: boolean;
+                data: { listsImported: number; templatesImported: number; historyImported: number; skipped: string[] };
+            };
+            expect(data.success).toBe(true);
+            expect(data.data.listsImported).toBe(1);
+            expect(data.data.templatesImported).toBe(1);
+            expect(data.data.historyImported).toBe(1);
+
+            const verifyRes = await app.request("/api/v1/export", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ includeHistory: true }),
+            });
+            const exportData = (await verifyRes.json()) as {
+                data: {
+                    lists: Array<{ name: string; sections: Array<{ name: string; items: Array<{ name: string }> }> }>;
+                    templates: Array<{ name: string; items: Array<{ name: string }> }>;
+                };
+            };
+            const importedList = exportData.data.lists.find((l) => l.name === "Imported Merge List");
+            expect(importedList).toBeDefined();
+            expect(importedList!.sections).toHaveLength(1);
+            expect(importedList!.sections[0]!.items).toHaveLength(2);
+        });
+
+        test("merges new items into existing list in merge mode", async () => {
+            const importData = {
+                version: "1.0.0",
+                exported_at: new Date().toISOString(),
+                lists: [{
+                    name: "Imported Merge List",
+                    icon: "📋",
+                    sections: [
+                        {
+                            name: "Imported Section",
+                            items: [
+                                { name: "Imported Item 1", description: "desc1", quantity: "2", status: "active" },
+                                { name: "Merged New Item", description: "new", quantity: "3", status: "active" },
+                            ],
+                        },
+                        {
+                            name: "Brand New Section",
+                            items: [
+                                { name: "Section Item", description: null, quantity: null, status: "active" },
+                            ],
+                        },
+                    ],
+                }],
+                templates: [],
+                history: [],
+            };
+
+            const res = await app.request("/api/v1/import", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    data: importData,
+                    options: { mode: "merge", importLists: true, importTemplates: false, importHistory: false },
+                }),
+            });
+            expect(res.status).toBe(200);
+
+            const data = (await res.json()) as {
+                data: { listsImported: number; listsMerged: number; skipped: string[] };
+            };
+            expect(data.data.listsImported).toBe(0);
+            expect(data.data.listsMerged).toBe(1);
+            expect(data.data.skipped.some((s: string) => s.includes("Imported Item 1") && s.includes("already exists"))).toBe(true);
+
+            const verifyRes = await app.request("/api/v1/export", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ includeHistory: true }),
+            });
+            const exportData = (await verifyRes.json()) as {
+                data: {
+                    lists: Array<{ name: string; sections: Array<{ name: string; items: Array<{ name: string }> }> }>;
+                };
+            };
+            const mergedList = exportData.data.lists.find((l) => l.name === "Imported Merge List");
+            expect(mergedList).toBeDefined();
+            expect(mergedList!.sections).toHaveLength(2);
+
+            const existingSection = mergedList!.sections.find((s) => s.name === "Imported Section");
+            expect(existingSection).toBeDefined();
+            expect(existingSection!.items).toHaveLength(3);
+            expect(existingSection!.items.some((i) => i.name === "Merged New Item")).toBe(true);
+
+            const newSection = mergedList!.sections.find((s) => s.name === "Brand New Section");
+            expect(newSection).toBeDefined();
+            expect(newSection!.items).toHaveLength(1);
+            expect(newSection!.items[0]!.name).toBe("Section Item");
+        });
+
+        test("imports data in replace mode", async () => {
+            const importData = {
+                version: "1.0.0",
+                exported_at: new Date().toISOString(),
+                lists: [
+                    {
+                        name: "Replaced List",
+                        icon: "🔄",
+                        sections: [{ name: "New Section", items: [{ name: "New Item", description: null, quantity: null, status: "active" }] }],
+                    },
+                ],
+                templates: [],
+                history: [],
+            };
+
+            const res = await app.request("/api/v1/import", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    data: importData,
+                    options: { mode: "replace", importLists: true, importTemplates: true, importHistory: true },
+                }),
+            });
+            expect(res.status).toBe(200);
+
+            const data = (await res.json()) as {
+                data: { listsImported: number };
+            };
+            expect(data.data.listsImported).toBe(1);
+
+            const verifyRes = await app.request("/api/v1/lists");
+            const listsData = (await verifyRes.json()) as { data: Array<{ name: string }> };
+            expect(listsData.data).toHaveLength(1);
+            expect(listsData.data[0]!.name).toBe("Replaced List");
+        });
+
+        test("selectively imports only templates", async () => {
+            const importData = {
+                version: "1.0.0",
+                exported_at: new Date().toISOString(),
+                lists: [{ name: "Should Not Import", icon: "📋", sections: [] }],
+                templates: [{ name: "Selective Template", items: [] }],
+                history: [],
+            };
+
+            const res = await app.request("/api/v1/import", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    data: importData,
+                    options: { mode: "merge", importLists: false, importTemplates: true, importHistory: false },
+                }),
+            });
+            expect(res.status).toBe(200);
+
+            const data = (await res.json()) as {
+                data: { listsImported: number; templatesImported: number };
+            };
+            expect(data.data.listsImported).toBe(0);
+            expect(data.data.templatesImported).toBe(1);
+        });
+
+        test("rejects invalid import mode", async () => {
+            const res = await app.request("/api/v1/import", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    data: { version: "1.0.0", exported_at: new Date().toISOString(), lists: [] },
+                    options: { mode: "invalid", importLists: true, importTemplates: true, importHistory: true },
+                }),
+            });
+            expect(res.status).toBe(400);
+        });
+
+        test("rejects request without data and options", async () => {
+            const res = await app.request("/api/v1/import", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({}),
+            });
+            expect(res.status).toBe(400);
+        });
+
+        test("rejects invalid JSON", async () => {
+            const res = await app.request("/api/v1/import", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: "not valid json",
+            });
+            expect(res.status).toBe(400);
+        });
+
+        test("validates import data structure", async () => {
+            const res = await app.request("/api/v1/import", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    data: { version: "1.0.0", exported_at: new Date().toISOString() },
+                    options: { mode: "merge", importLists: true, importTemplates: true, importHistory: true },
+                }),
+            });
+            expect(res.status).toBe(400);
+        });
+
+        test("handles items with missing optional fields", async () => {
+            const importData = {
+                version: "1.0.0",
+                exported_at: new Date().toISOString(),
+                lists: [
+                    {
+                        name: "Minimal List",
+                        icon: "📋",
+                        sections: [
+                            {
+                                name: "Minimal Section",
+                                items: [{ name: "Minimal Item", description: null, quantity: null, status: "active" }],
+                            },
+                        ],
+                    },
+                ],
+                templates: [],
+                history: [],
+            };
+
+            const res = await app.request("/api/v1/import", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    data: importData,
+                    options: { mode: "merge", importLists: true, importTemplates: false, importHistory: false },
+                }),
+            });
+            expect(res.status).toBe(200);
+
+            const data = (await res.json()) as { data: { listsImported: number } };
+            expect(data.data.listsImported).toBe(1);
+        });
+
+        test("sanitizes import data strings", async () => {
+            const importData = {
+                version: "1.0.0",
+                exported_at: new Date().toISOString(),
+                lists: [
+                    {
+                        name: "  Trimmed Name  ",
+                        icon: "📋",
+                        sections: [
+                            {
+                                name: "  Trimmed Section  ",
+                                items: [{ name: "  Trimmed Item  ", description: null, quantity: null, status: "active" }],
+                            },
+                        ],
+                    },
+                ],
+                templates: [],
+                history: [],
+            };
+
+            const res = await app.request("/api/v1/import", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    data: importData,
+                    options: { mode: "merge", importLists: true, importTemplates: false, importHistory: false },
+                }),
+            });
+            expect(res.status).toBe(200);
+
+            const verifyRes = await app.request("/api/v1/export", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ includeHistory: true }),
+            });
+            const exportData = (await verifyRes.json()) as {
+                data: { lists: Array<{ name: string; sections: Array<{ name: string; items: Array<{ name: string }> }> }> };
+            };
+            const trimmedList = exportData.data.lists.find((l) => l.name === "Trimmed Name");
+            expect(trimmedList).toBeDefined();
+            expect(trimmedList!.sections[0]!.name).toBe("Trimmed Section");
+            expect(trimmedList!.sections[0]!.items[0]!.name).toBe("Trimmed Item");
         });
     });
 });

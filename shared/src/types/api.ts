@@ -75,3 +75,86 @@ export type BatchOperation = {
 export type BatchRequest = {
     operations: BatchOperation[];
 };
+
+export type ExportItemData = {
+    name: string;
+    description: string | null;
+    quantity: string | null;
+    status: string;
+};
+
+export type ExportSectionData = {
+    name: string;
+    items: ExportItemData[];
+};
+
+export type ExportListData = {
+    name: string;
+    icon: string;
+    sections: ExportSectionData[];
+};
+
+export type ExportTemplateItemData = {
+    name: string;
+    description: string | null;
+    quantity: string | null;
+    sectionName: string | null;
+};
+
+export type ExportTemplateData = {
+    name: string;
+    items: ExportTemplateItemData[];
+};
+
+export type ExportHistoryData = {
+    name: string;
+    sectionName: string | null;
+    description: string | null;
+    quantity: string | null;
+    frequency: number;
+};
+
+export type ExportData = {
+    version: string;
+    exported_at: string;
+    lists: ExportListData[];
+    templates: ExportTemplateData[];
+    history: ExportHistoryData[];
+};
+
+export type ExportOptions = {
+    listIds?: number[];
+    templateIds?: number[];
+    includeHistory: boolean;
+};
+
+export type ExportSummary = {
+    lists: Array<{ id: number; name: string; icon: string; itemCount: number }>;
+    templates: Array<{ id: number; name: string; itemCount: number }>;
+    historyCount: number;
+};
+
+export type ImportPreview = {
+    listCount: number;
+    templateCount: number;
+    historyCount: number;
+    existingListConflicts: string[];
+    existingTemplateConflicts: string[];
+};
+
+export type ImportMode = "merge" | "replace";
+
+export type ImportOptions = {
+    mode: ImportMode;
+    importLists: boolean;
+    importTemplates: boolean;
+    importHistory: boolean;
+};
+
+export type ImportResult = {
+    listsImported: number;
+    listsMerged: number;
+    templatesImported: number;
+    historyImported: number;
+    skipped: string[];
+};

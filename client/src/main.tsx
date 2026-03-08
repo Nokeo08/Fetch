@@ -8,6 +8,7 @@ import Login from "./Login.tsx";
 import ListDetail from "./ListDetail.tsx";
 import Templates from "./Templates.tsx";
 import TemplateDetail from "./TemplateDetail.tsx";
+import Settings from "./Settings.tsx";
 import { AuthProvider, useAuth } from "./AuthContext.tsx";
 import { WebSocketProvider } from "./WebSocketContext.tsx";
 import { OfflineProvider } from "./OfflineContext.tsx";
@@ -80,6 +81,14 @@ function AppRoutes() {
                 element={
                     <ProtectedRoute>
                         <TemplateDetail />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/settings"
+                element={
+                    <ProtectedRoute>
+                        <Settings />
                     </ProtectedRoute>
                 }
             />

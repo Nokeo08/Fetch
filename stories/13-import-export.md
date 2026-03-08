@@ -11,21 +11,17 @@ As a user, I want to import and export my data so that I can back up my lists or
 
 ## Acceptance Criteria
 
-### Export All Data
-- [ ] "Export All" button in settings
-- [ ] Generates JSON file with all data:
-  - Lists with sections and items
-  - Templates
-  - History
-  - Metadata (export date, app version)
-- [ ] Download prompts browser save
-- [ ] Filename includes date: `fetch-backup-2024-02-11.json`
-
-### Export Single List
-- [ ] "Export" option on each list
-- [ ] JSON format (structured)
-- [ ] CSV format (flat - rows of items)
-- [ ] Include list metadata
+### Selective Export
+- [x] "Export" button in settings opens export modal
+- [x] Modal fetches summary of available data (lists, templates, history count)
+- [x] Checkboxes for each list (showing icon, name, item count)
+- [x] Checkboxes for each template (showing name, item count)
+- [x] Toggle for history
+- [x] Select all / deselect all for lists and templates
+- [x] Export button disabled when nothing selected
+- [x] Generates JSON file with selected data
+- [x] Download prompts browser save
+- [x] Filename includes date: `fetch-backup-2024-02-11.json`
 
 ### JSON Export Format
 ```json
@@ -56,130 +52,93 @@ As a user, I want to import and export my data so that I can back up my lists or
 }
 ```
 
-### CSV Export Format
-```csv
-list_name,section_name,item_name,description,quantity,status
-Grocery Store,Produce,Apples,Red delicious,5,active
-Grocery Store,Produce,Bananas,,1 bunch,completed
-```
-
 ### Import Data
-- [ ] "Import" button in settings
-- [ ] File picker accepts JSON
-- [ ] File size limit (e.g., 10 MB)
-- [ ] Validate JSON structure
-- [ ] Show preview before applying:
+- [x] "Import" button in settings
+- [x] File picker accepts JSON
+- [x] File size limit (10 MB)
+- [x] Validate JSON structure (must have `version`, `exported_at`, `lists` array)
+- [x] Show preview before applying:
   - Count of lists to import
   - Count of templates
   - Count of history items
   - Conflicts with existing data
 
 ### Import Options
-- [ ] "Merge" - Add to existing data
-- [ ] "Replace" - Clear existing data first
-- [ ] Option to select what to import:
+- [x] "Merge" - Add new data, merge sections/items into existing lists by name
+- [x] "Replace" - Clear existing data first
+- [x] Option to select what to import:
   - Lists
   - Templates
   - History
 
+### Merge Behavior
+- [x] Lists with the same name are merged (not skipped or duplicated)
+- [x] Existing sections within a merged list receive new items (duplicates skipped by name)
+- [x] New sections are added to existing lists
+- [x] New lists are created normally
+- [x] `listsMerged` counter tracks how many lists were merged vs newly created
+- [x] Skipped items reported with context (e.g., `Item "X" in "List > Section" (already exists)`)
+- [x] Templates and history skip duplicates by name in merge mode
+
 ### Import Validation
-- [ ] Validate required fields
-- [ ] Check for duplicate names (in merge mode)
-- [ ] Handle missing optional fields
-- [ ] Sanitize input data
-- [ ] Transactional import (all or nothing)
+- [x] Validate required fields
+- [x] Check for duplicate names (in merge mode)
+- [x] Handle missing optional fields
+- [x] Sanitize input data (trim strings, enforce max lengths)
+- [x] Validate item status values (active, completed, uncertain); default to active
+- [x] Transactional import (all or nothing)
 
 ### Import Results
-- [ ] Show success message with counts
-- [ ] Show error message if failed
-- [ ] List any items skipped
-- [ ] Option to undo (if supported)
+- [x] Show success message with counts (imported, merged, skipped)
+- [x] Show error message if failed
+- [x] List any items skipped
+- [ ] Option to undo (not implemented)
 
 ### Error Handling
-- [ ] Invalid JSON format
-- [ ] Missing required fields
-- [ ] Unsupported version
-- [ ] Corrupted data
-- [ ] All errors shown to user
+- [x] Invalid JSON format
+- [x] Missing required fields
+- [x] Unsupported version
+- [x] Corrupted data
+- [x] All errors shown to user via toast or modal
 
 ## Technical Notes
 
-### Export Algorithm
-```javascript
-async function exportAllData() {
-  const data = {
-    version: APP_VERSION,
-    exported_at: new Date().toISOString(),
-    lists: await getAllListsWithSectionsAndItems(),
-    templates: await getAllTemplates(),
-    history: await getAllHistory()
-  };
-  
-  const blob = new Blob([JSON.stringify(data, null, 2)], {
-    type: 'application/json'
-  });
-  
-  downloadFile(blob, `fetch-backup-${formatDate(new Date())}.json`);
-}
-```
+### API Endpoints
+- `GET /api/v1/export/summary` - Returns lists (id, name, icon, itemCount), templates (id, name, itemCount), historyCount
+- `POST /api/v1/export` - Accepts `{ listIds?: number[], templateIds?: number[], includeHistory: boolean }`, returns ExportData JSON
+- `POST /api/v1/import/preview` - Accepts ExportData, returns preview with counts and conflicts
+- `POST /api/v1/import` - Accepts `{ data: ExportData, options: ImportOptions }`, returns ImportResult
 
-### Import Algorithm
-```javascript
-async function importData(file, options) {
-  const content = await readFile(file);
-  const data = JSON.parse(content);
-  
-  // Validate
-  if (!validateImportData(data)) {
-    throw new Error('Invalid import format');
-  }
-  
-  // Preview
-  const preview = {
-    lists: data.lists.length,
-    templates: data.templates?.length || 0,
-    history: data.history?.length || 0
-  };
-  
-  if (!confirmImport(preview)) {
-    return;
-  }
-  
-  // Import within transaction
-  await db.transaction(async (trx) => {
-    if (options.mode === 'replace') {
-      await clearAllData(trx);
-    }
-    
-    for (const list of data.lists) {
-      await importList(trx, list, options);
-    }
-    
-    if (options.importTemplates) {
-      for (const template of data.templates || []) {
-        await importTemplate(trx, template);
-      }
-    }
-    
-    if (options.importHistory) {
-      for (const history of data.history || []) {
-        await importHistory(trx, history);
-      }
-    }
-  });
-}
+### Shared Types
+- `ExportOptions` - `{ listIds?: number[], templateIds?: number[], includeHistory: boolean }`
+- `ExportSummary` - `{ lists: Array<{id, name, icon, itemCount}>, templates: Array<{id, name, itemCount}>, historyCount }`
+- `ImportPreview` - `{ listCount, templateCount, historyCount, existingListConflicts, existingTemplateConflicts }`
+- `ImportOptions` - `{ mode: "merge" | "replace", importLists, importTemplates, importHistory }`
+- `ImportResult` - `{ listsImported, listsMerged, templatesImported, historyImported, skipped }`
+
+### Export Selection Logic
+- `listIds` undefined = export all lists; empty array `[]` = export no lists; array of IDs = export selected
+- Same pattern for `templateIds`
+- `includeHistory` boolean controls history inclusion
+
+### Import Merge Logic
+```
+For each list in import data:
+  If list name exists in DB (case-insensitive):
+    For each section in import list:
+      If section name exists in DB list:
+        Add only new items (skip duplicates by name)
+      Else:
+        Create new section with all items
+    Track as "merged" if any changes made
+  Else:
+    Create new list with all sections and items
+    Track as "imported"
 ```
 
 ### Version Compatibility
-- Check export version on import
-- Provide migration path if needed
-- Document breaking changes
-
-### API Endpoints
-- `GET /export/all` - Export all data
-- `GET /export/lists/:id` - Export single list
-- `POST /import` - Import data (multipart/form-data)
-- `POST /import/preview` - Preview import
+- Supported versions: `["1.0.0"]`
+- Version checked on import; unsupported versions rejected with error
 
 ## Dependencies
 
@@ -187,10 +146,10 @@ async function importData(file, options) {
 
 ## Definition of Done
 
-- [ ] Can export all data as JSON
-- [ ] Can export single list as JSON/CSV
-- [ ] Can import JSON files
-- [ ] Preview shown before import
-- [ ] Merge and replace modes work
-- [ ] Validation prevents bad imports
-- [ ] Tests verify import/export
+- [x] Can export selected data as JSON via export modal
+- [x] Can import JSON files
+- [x] Preview shown before import
+- [x] Merge mode merges into existing lists (not skip)
+- [x] Replace mode clears and reimports
+- [x] Validation prevents bad imports
+- [x] Tests verify import/export (unit + integration)

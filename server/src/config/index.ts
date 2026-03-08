@@ -1,4 +1,14 @@
+import { resolve } from "path";
 import type { Config } from "./types";
+
+const PROJECT_ROOT = resolve(import.meta.dir, "../../..");
+
+function resolveDatabasePath(envPath: string | undefined): string {
+    const dbPath = envPath || "./data/fetch.db";
+    if (dbPath === ":memory:") return dbPath;
+    if (dbPath.startsWith("/")) return dbPath;
+    return resolve(PROJECT_ROOT, dbPath);
+}
 
 export function getConfig(): Config {
     return {
@@ -11,7 +21,7 @@ export function getConfig(): Config {
             token: process.env.API_TOKEN || undefined,
         },
         database: {
-            path: process.env.DATABASE_PATH || "./data/fetch.db",
+            path: resolveDatabasePath(process.env.DATABASE_PATH),
         },
         session: {
             secret: process.env.SESSION_SECRET || generateRandomSecret(),

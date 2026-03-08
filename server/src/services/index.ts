@@ -10,3 +10,9 @@ export {
     type ApplyTemplateResult,
     type SectionWithItems,
 } from "./templates";
+export {
+    createImportExportService,
+    validateImportData,
+    type ImportExportService,
+    type ValidationError,
+} from "./import-export";

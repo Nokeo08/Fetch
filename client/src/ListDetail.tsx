@@ -43,7 +43,10 @@ export default function ListDetail() {
     const [expandedCompletedSections, setExpandedCompletedSections] = useState<Set<number>>(new Set());
     const [draggedSectionId, setDraggedSectionId] = useState<number | null>(null);
 
-    const [newItemNames, setNewItemNames] = useState<Record<number, string>>({});
+    const [quickAddName, setQuickAddName] = useState("");
+    const [quickAddQuantity, setQuickAddQuantity] = useState("");
+    const [quickAddDescription, setQuickAddDescription] = useState("");
+    const [quickAddSectionId, setQuickAddSectionId] = useState<number | null>(null);
     const [dragState, setDragState] = useState<DragState | null>(null);
 
     const [showEditItemModal, setShowEditItemModal] = useState(false);
@@ -112,6 +115,12 @@ export default function ListDetail() {
             saveAsTemplateModalRef.current.focus();
         }
     }, [showSaveAsTemplateModal]);
+
+    useEffect(() => {
+        if (sections.length > 0 && (quickAddSectionId === null || !sections.some((s) => s.id === quickAddSectionId))) {
+            setQuickAddSectionId(sections[0]?.id ?? null);
+        }
+    }, [sections, quickAddSectionId]);
 
     const fetchData = useCallback(async () => {
         if (!listId) return;
@@ -281,15 +290,20 @@ export default function ListDetail() {
         setDraggedSectionId(null);
     };
 
-    const handleAddItem = async (sectionId: number) => {
-        const name = newItemNames[sectionId]?.trim();
-        if (!name) return;
+    const handleQuickAdd = async () => {
+        const name = quickAddName.trim();
+        const sectionId = quickAddSectionId;
+        if (!name || !sectionId) return;
+
+        const quantity = quickAddQuantity.trim() || undefined;
+        const description = quickAddDescription.trim() || undefined;
 
         try {
-            const res = await itemsApi.create(sectionId, name);
+            const res = await itemsApi.create(sectionId, name, description, quantity);
             if (res.success && res.data) {
-                // Rely on WebSocket for state update to avoid duplicates
-                setNewItemNames((prev) => ({ ...prev, [sectionId]: "" }));
+                setQuickAddName("");
+                setQuickAddQuantity("");
+                setQuickAddDescription("");
             } else {
                 showToast(res.error || "Failed to add item", "error");
             }
@@ -325,61 +339,85 @@ export default function ListDetail() {
         setShowEditItemModal(true);
     };
 
+    const openAddItemModal = (sectionId: number) => {
+        setEditingItem(null);
+        setItemName("");
+        setItemDescription("");
+        setItemQuantity("");
+        setItemSectionId(sectionId);
+        setShowEditItemModal(true);
+    };
+
     const openDeleteItemModal = (item: Item, sectionId: number) => {
         setDeletingItem({ item, sectionId });
         setShowDeleteItemModal(true);
     };
 
-    const handleEditItem = async () => {
-        if (!editingItem || !itemName.trim() || !itemSectionId) return;
+    const handleSaveItem = async () => {
+        if (!itemName.trim() || !itemSectionId) return;
 
         setIsSubmitting(true);
         try {
-            const needsMove = itemSectionId !== editingItem.item.sectionId;
+            if (editingItem) {
+                const needsMove = itemSectionId !== editingItem.item.sectionId;
 
-            if (needsMove) {
-                const moveRes = await itemsApi.move(editingItem.item.id, itemSectionId);
-                if (!moveRes.success) {
-                    showToast(moveRes.error || "Failed to move item", "error");
-                    return;
+                if (needsMove) {
+                    const moveRes = await itemsApi.move(editingItem.item.id, itemSectionId);
+                    if (!moveRes.success) {
+                        showToast(moveRes.error || "Failed to move item", "error");
+                        return;
+                    }
+                }
+
+                const res = await itemsApi.update(editingItem.item.id, {
+                    name: itemName.trim(),
+                    description: itemDescription.trim() || null,
+                    quantity: itemQuantity.trim() || null,
+                });
+                if (res.success && res.data) {
+                    setSections((prev) => {
+                        const updated = prev.map((s) => {
+                            if (needsMove) {
+                                if (s.id === editingItem.sectionId) {
+                                    return { ...s, items: s.items.filter((i) => i.id !== editingItem.item.id) };
+                                }
+                                if (s.id === itemSectionId) {
+                                    return { ...s, items: [...s.items, { ...res.data!, sectionId: itemSectionId }] };
+                                }
+                            } else if (s.id === editingItem.sectionId) {
+                                return {
+                                    ...s,
+                                    items: s.items.map((i) =>
+                                        i.id === editingItem.item.id ? res.data! : i
+                                    ),
+                                };
+                            }
+                            return s;
+                        });
+                        return updated;
+                    });
+                    setShowEditItemModal(false);
+                    setEditingItem(null);
+                    showToast(needsMove ? "Item moved and updated" : "Item updated");
+                } else {
+                    showToast(res.error || "Failed to update item", "error");
+                }
+            } else {
+                const res = await itemsApi.create(
+                    itemSectionId,
+                    itemName.trim(),
+                    itemDescription.trim() || undefined,
+                    itemQuantity.trim() || undefined,
+                );
+                if (res.success && res.data) {
+                    setShowEditItemModal(false);
+                    showToast("Item added");
+                } else {
+                    showToast(res.error || "Failed to add item", "error");
                 }
             }
-
-            const res = await itemsApi.update(editingItem.item.id, {
-                name: itemName.trim(),
-                description: itemDescription.trim() || null,
-                quantity: itemQuantity.trim() || null,
-            });
-            if (res.success && res.data) {
-                setSections((prev) => {
-                    const updated = prev.map((s) => {
-                        if (needsMove) {
-                            if (s.id === editingItem.sectionId) {
-                                return { ...s, items: s.items.filter((i) => i.id !== editingItem.item.id) };
-                            }
-                            if (s.id === itemSectionId) {
-                                return { ...s, items: [...s.items, { ...res.data!, sectionId: itemSectionId }] };
-                            }
-                        } else if (s.id === editingItem.sectionId) {
-                            return {
-                                ...s,
-                                items: s.items.map((i) =>
-                                    i.id === editingItem.item.id ? res.data! : i
-                                ),
-                            };
-                        }
-                        return s;
-                    });
-                    return updated;
-                });
-                setShowEditItemModal(false);
-                setEditingItem(null);
-                showToast(needsMove ? "Item moved and updated" : "Item updated");
-            } else {
-                showToast(res.error || "Failed to update item", "error");
-            }
         } catch {
-            showToast("Failed to update item", "error");
+            showToast(editingItem ? "Failed to update item" : "Failed to add item", "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -645,6 +683,64 @@ export default function ListDetail() {
                 </div>
             </div>
 
+            {sections.length > 0 && (
+                <div className="quick-add-bar">
+                    <Autocomplete
+                        value={quickAddName}
+                        onChange={setQuickAddName}
+                        onSelect={(entry: HistoryEntry) => {
+                            setQuickAddName(entry.name);
+                            if (entry.quantity) {
+                                setQuickAddQuantity(entry.quantity);
+                            }
+                            if (entry.description) {
+                                setQuickAddDescription(entry.description);
+                            }
+                        }}
+                        onSubmit={handleQuickAdd}
+                        placeholder="Item name..."
+                    />
+                    <input
+                        className="quick-add-quantity"
+                        type="text"
+                        value={quickAddQuantity}
+                        onChange={(e) => setQuickAddQuantity(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") handleQuickAdd();
+                        }}
+                        placeholder="Qty"
+                    />
+                    <input
+                        className="quick-add-description"
+                        type="text"
+                        value={quickAddDescription}
+                        onChange={(e) => setQuickAddDescription(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") handleQuickAdd();
+                        }}
+                        placeholder="Description"
+                    />
+                    <select
+                        className="quick-add-section"
+                        value={quickAddSectionId || ""}
+                        onChange={(e) => setQuickAddSectionId(parseInt(e.target.value, 10))}
+                    >
+                        {sections.map((section) => (
+                            <option key={section.id} value={section.id}>
+                                {section.name}
+                            </option>
+                        ))}
+                    </select>
+                    <button
+                        className="quick-add-btn"
+                        onClick={handleQuickAdd}
+                        disabled={!quickAddName.trim() || !quickAddSectionId}
+                    >
+                        Add
+                    </button>
+                </div>
+            )}
+
             {sections.length === 0 ? (
                 <div className="sections-empty">
                     <p>No sections yet. Add a section to organize your items.</p>
@@ -680,6 +776,12 @@ export default function ListDetail() {
                                         </button>
                                     )}
                                     <button
+                                        className="section-add-btn"
+                                        onClick={() => openAddItemModal(section.id)}
+                                    >
+                                        Add
+                                    </button>
+                                    <button
                                         className="section-edit-btn"
                                         onClick={() => openEditSectionModal(section)}
                                     >
@@ -695,32 +797,6 @@ export default function ListDetail() {
                             </div>
 
                             <div className={`section-content ${collapsedSections.has(section.id) ? "collapsed" : ""}`}>
-                                <div className="add-item-form">
-                                    <Autocomplete
-                                        value={newItemNames[section.id] || ""}
-                                        onChange={(value) =>
-                                            setNewItemNames((prev) => ({
-                                                ...prev,
-                                                [section.id]: value,
-                                            }))
-                                        }
-                                        onSelect={(entry: HistoryEntry) => {
-                                            setNewItemNames((prev) => ({
-                                                ...prev,
-                                                [section.id]: entry.name,
-                                            }));
-                                        }}
-                                        onSubmit={() => handleAddItem(section.id)}
-                                        placeholder="Add item..."
-                                    />
-                                    <button
-                                        className="add-item-btn"
-                                        onClick={() => handleAddItem(section.id)}
-                                    >
-                                        Add
-                                    </button>
-                                </div>
-
                                 {section.items.length === 0 ? (
                                     <div className="items-empty">No items in this section</div>
                                 ) : (
@@ -991,7 +1067,7 @@ export default function ListDetail() {
                 </div>
             )}
 
-            {showEditItemModal && editingItem && (
+            {showEditItemModal && (
                 <div className="modal-overlay" onClick={() => setShowEditItemModal(false)}>
                     <div
                         ref={editItemModalRef}
@@ -1000,14 +1076,14 @@ export default function ListDetail() {
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => {
                             if (e.key === "Enter" && itemName.trim() && !isSubmitting) {
-                                handleEditItem();
+                                handleSaveItem();
                             }
                             if (e.key === "Escape") {
                                 setShowEditItemModal(false);
                             }
                         }}
                     >
-                        <h2>Edit Item</h2>
+                        <h2>{editingItem ? "Edit Item" : "Add Item"}</h2>
                         <div className="modal-form">
                             <div className="form-group">
                                 <label htmlFor="item-name">Name</label>
@@ -1022,16 +1098,6 @@ export default function ListDetail() {
                                 />
                             </div>
                             <div className="form-group">
-                                <label htmlFor="item-description">Description (optional)</label>
-                                <input
-                                    id="item-description"
-                                    type="text"
-                                    value={itemDescription}
-                                    onChange={(e) => setItemDescription(e.target.value)}
-                                    placeholder="Description"
-                                />
-                            </div>
-                            <div className="form-group">
                                 <label htmlFor="item-quantity">Quantity (optional)</label>
                                 <input
                                     id="item-quantity"
@@ -1039,6 +1105,16 @@ export default function ListDetail() {
                                     value={itemQuantity}
                                     onChange={(e) => setItemQuantity(e.target.value)}
                                     placeholder="e.g., 2 lbs, 3 items"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="item-description">Description (optional)</label>
+                                <input
+                                    id="item-description"
+                                    type="text"
+                                    value={itemDescription}
+                                    onChange={(e) => setItemDescription(e.target.value)}
+                                    placeholder="Description"
                                 />
                             </div>
                             <div className="form-group">
@@ -1062,10 +1138,10 @@ export default function ListDetail() {
                             </button>
                             <button
                                 className="submit-btn"
-                                onClick={handleEditItem}
+                                onClick={handleSaveItem}
                                 disabled={!itemName.trim() || isSubmitting}
                             >
-                                {isSubmitting ? "Saving..." : "Save"}
+                                {isSubmitting ? "Saving..." : editingItem ? "Save" : "Add"}
                             </button>
                         </div>
                     </div>

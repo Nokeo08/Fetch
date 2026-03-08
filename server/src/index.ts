@@ -13,6 +13,8 @@ import {
     createSessionsService,
     createRateLimitsService,
     createTemplatesService,
+    createImportExportService,
+    validateImportData,
 } from "./services";
 import {
     errorHandler,
@@ -41,7 +43,7 @@ import {
     broadcastItemDeleted,
     broadcastItemMoved,
 } from "./sync/broadcast";
-import type { ApiResponse, ItemStatus } from "shared/dist";
+import type { ApiResponse, ItemStatus, ExportData, ImportOptions } from "shared/dist";
 import type { Database } from "bun:sqlite";
 
 const VALID_STATUSES: ItemStatus[] = ["active", "completed", "uncertain"];
@@ -71,6 +73,7 @@ const itemsService = createItemsService(db);
 const sessionsService = createSessionsService(db);
 const rateLimitsService = createRateLimitsService(db, config.rateLimit);
 const templatesService = createTemplatesService(db);
+const importExportService = createImportExportService(db);
 
 export type AppVariables = {
     requestId: string;
@@ -204,7 +207,7 @@ export const app = new Hono<{ Variables: AppVariables }>()
     })
 
     .route("/", wsApp)
-    .route("/api/v1", createApiRoutes(listsService, sectionsService, itemsService, sessionsService, config))
+    .route("/api/v1", createApiRoutes(listsService, sectionsService, itemsService, sessionsService, importExportService, config))
 
     .notFound(notFoundHandler);
 
@@ -213,6 +216,7 @@ function createApiRoutes(
     sectionsService: ReturnType<typeof createSectionsService>,
     itemsService: ReturnType<typeof createItemsService>,
     sessionsService: ReturnType<typeof createSessionsService>,
+    importExportService: ReturnType<typeof createImportExportService>,
     config: ReturnType<typeof getConfig>
 ) {
     return new Hono<{ Variables: AppVariables }>()
@@ -646,6 +650,88 @@ function createApiRoutes(
 
             const template = templatesService.createFromSections(body.name.trim(), sections);
             return c.json<ApiResponse>({ success: true, data: template }, 201);
+        })
+
+        .get("/export/summary", (c) => {
+            const summary = importExportService.getExportSummary();
+            return c.json<ApiResponse>({ success: true, data: summary });
+        })
+
+        .post("/export", async (c) => {
+            let body: { listIds?: number[]; templateIds?: number[]; includeHistory?: boolean };
+            try {
+                body = await c.req.json();
+            } catch {
+                body = {};
+            }
+
+            const options = {
+                listIds: body.listIds,
+                templateIds: body.templateIds,
+                includeHistory: body.includeHistory !== false,
+            };
+
+            const data = importExportService.exportData(options);
+            return c.json<ApiResponse>({ success: true, data });
+        })
+
+        .post("/import/preview", async (c) => {
+            let body: unknown;
+            try {
+                const text = await c.req.text();
+                if (text.length > importExportService.getMaxImportSize()) {
+                    return c.json<ApiResponse>({ success: false, error: "File too large. Maximum size is 10 MB." }, 400);
+                }
+                body = JSON.parse(text);
+            } catch {
+                return c.json<ApiResponse>({ success: false, error: "Invalid JSON format" }, 400);
+            }
+
+            const validation = validateImportData(body);
+            if (!validation.valid) {
+                return c.json<ApiResponse>({ success: false, error: "Validation failed", data: { errors: validation.errors } }, 400);
+            }
+
+            const preview = importExportService.preview(body as ExportData);
+            return c.json<ApiResponse>({ success: true, data: preview });
+        })
+
+        .post("/import", async (c) => {
+            let rawBody: unknown;
+            try {
+                const text = await c.req.text();
+                if (text.length > importExportService.getMaxImportSize()) {
+                    return c.json<ApiResponse>({ success: false, error: "File too large. Maximum size is 10 MB." }, 400);
+                }
+                rawBody = JSON.parse(text);
+            } catch {
+                return c.json<ApiResponse>({ success: false, error: "Invalid JSON format" }, 400);
+            }
+
+            const outerBody = rawBody as { data?: unknown; options?: ImportOptions };
+            const importData = outerBody.data;
+            const options = outerBody.options;
+
+            if (!importData || !options) {
+                return c.json<ApiResponse>({ success: false, error: "Request must include 'data' and 'options' fields" }, 400);
+            }
+
+            if (options.mode !== "merge" && options.mode !== "replace") {
+                return c.json<ApiResponse>({ success: false, error: "Import mode must be 'merge' or 'replace'" }, 400);
+            }
+
+            const validation = validateImportData(importData);
+            if (!validation.valid) {
+                return c.json<ApiResponse>({ success: false, error: "Validation failed", data: { errors: validation.errors } }, 400);
+            }
+
+            try {
+                const result = importExportService.importData(importData as ExportData, options);
+                return c.json<ApiResponse>({ success: true, data: result });
+            } catch (err) {
+                const message = err instanceof Error ? err.message : "Import failed";
+                return c.json<ApiResponse>({ success: false, error: message }, 500);
+            }
         });
 }
 

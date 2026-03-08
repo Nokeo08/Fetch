@@ -1,0 +1,386 @@
+.settings-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.settings-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.settings-header h1 {
+    margin: 0;
+    font-size: 1.75rem;
+    color: rgba(255, 255, 255, 0.87);
+}
+
+.settings-section {
+    margin-bottom: 2rem;
+}
+
+.settings-section h2 {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #333;
+}
+
+.settings-card {
+    background: #1a1a1a;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.settings-card-header h3 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.87);
+}
+
+.settings-card-description {
+    margin: 0;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.settings-action-btn {
+    padding: 0.6rem 1.25rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.settings-action-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.export-btn {
+    background: #646cff;
+    color: white;
+}
+
+.export-btn:hover:not(:disabled) {
+    background: #535bf2;
+}
+
+.import-btn {
+    background: #333;
+    color: rgba(255, 255, 255, 0.87);
+}
+
+.import-btn:hover {
+    background: #444;
+}
+
+.import-modal {
+    max-width: 500px;
+}
+
+.export-modal {
+    max-width: 500px;
+}
+
+.export-group {
+    margin-bottom: 1rem;
+}
+
+.export-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.select-toggle-btn {
+    background: none;
+    border: none;
+    color: #646cff;
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.select-toggle-btn:hover {
+    background: rgba(100, 108, 255, 0.1);
+}
+
+.export-selection-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.export-selection-list .checkbox-option {
+    padding: 0.5rem 0.75rem;
+}
+
+.export-item-icon {
+    flex-shrink: 0;
+}
+
+.export-item-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.export-item-count {
+    flex-shrink: 0;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.4);
+    margin-left: auto;
+    padding-left: 0.5rem;
+}
+
+.export-empty {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.5);
+    padding: 2rem 0;
+    margin: 0;
+}
+
+.import-preview-stats {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.preview-stat {
+    flex: 1;
+    text-align: center;
+    background: #0a0a0a;
+    border-radius: 8px;
+    padding: 1rem 0.5rem;
+}
+
+.stat-count {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #646cff;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 0.25rem;
+}
+
+.import-conflicts {
+    background: #2d2a1f;
+    border: 1px solid #5c5328;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.import-conflicts h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+    color: #ffd07d;
+}
+
+.conflict-group {
+    margin-bottom: 0.5rem;
+}
+
+.conflict-group:last-child {
+    margin-bottom: 0;
+}
+
+.conflict-label {
+    margin: 0 0 0.25rem 0;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+}
+
+.import-conflicts ul {
+    margin: 0;
+    padding-left: 1.25rem;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.import-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.option-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.option-label {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+}
+
+.import-mode-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.radio-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: #0a0a0a;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.radio-option:hover {
+    background: #151515;
+}
+
+.radio-option input[type="radio"] {
+    margin-top: 0.15rem;
+    accent-color: #646cff;
+}
+
+.radio-label {
+    display: block;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.87);
+    font-weight: 500;
+}
+
+.radio-description {
+    display: block;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 0.15rem;
+}
+
+.checkbox-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.checkbox-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    background: #0a0a0a;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.87);
+    transition: background 0.2s;
+}
+
+.checkbox-option:hover {
+    background: #151515;
+}
+
+.checkbox-option input[type="checkbox"] {
+    accent-color: #646cff;
+}
+
+.import-loading {
+    text-align: center;
+    padding: 2rem 0;
+}
+
+.import-loading h2 {
+    margin: 0 0 0.5rem 0;
+}
+
+.import-loading p {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.import-result-stats {
+    margin-bottom: 1rem;
+}
+
+.import-result-stats p {
+    margin: 0.25rem 0;
+    color: #7dff7d;
+    font-size: 0.95rem;
+}
+
+.import-skipped {
+    background: #2d2a1f;
+    border: 1px solid #5c5328;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.import-skipped h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+    color: #ffd07d;
+}
+
+.import-skipped ul {
+    margin: 0;
+    padding-left: 1.25rem;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+@media (max-width: 768px) {
+    .settings-page {
+        padding: 1rem;
+    }
+
+    .settings-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .settings-header h1 {
+        text-align: center;
+        font-size: 1.5rem;
+    }
+
+    .settings-card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .settings-action-btn {
+        width: 100%;
+        text-align: center;
+    }
+
+    .import-preview-stats {
+        flex-direction: column;
+    }
+}
