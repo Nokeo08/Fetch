@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { listsApi, type ListWithCounts } from "./api/lists";
+import { useTranslation } from "./i18n/index";
 import "./Lists.css";
 
 const EMOJI_OPTIONS = ["📋", "🛒", "🏠", "🏭", "🏪", "🎯", "⭐", "❤️", "🎉", "🔥", "💡", "🎁", "🌟", "✨", "🚀"];
@@ -12,6 +13,7 @@ type Toast = {
 
 export default function Lists() {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const [lists, setLists] = useState<ListWithCounts[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
@@ -48,14 +50,14 @@ export default function Lists() {
             if (res.success && res.data) {
                 setLists(res.data);
             } else {
-                setError(res.error || "Failed to load lists");
+                setError(res.error || t("lists.failedToLoad"));
             }
         } catch {
-            setError("Failed to load lists");
+            setError(t("lists.failedToLoad"));
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         fetchLists();
@@ -88,12 +90,12 @@ export default function Lists() {
             if (res.success && res.data) {
                 setLists((prev) => [...prev, { ...res.data!, itemCount: 0, sectionCount: 0 }]);
                 setShowCreateModal(false);
-                showToast("List added successfully");
+                showToast(t("lists.addedSuccess"));
             } else {
-                showToast(res.error || "Failed to create list", "error");
+                showToast(res.error || t("lists.failedToCreate"), "error");
             }
         } catch {
-            showToast("Failed to create list", "error");
+            showToast(t("lists.failedToCreate"), "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -116,12 +118,12 @@ export default function Lists() {
                 );
                 setShowEditModal(false);
                 setEditingList(null);
-                showToast("List updated successfully");
+                showToast(t("lists.updatedSuccess"));
             } else {
-                showToast(res.error || "Failed to update list", "error");
+                showToast(res.error || t("lists.failedToUpdate"), "error");
             }
         } catch {
-            showToast("Failed to update list", "error");
+            showToast(t("lists.failedToUpdate"), "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -137,12 +139,12 @@ export default function Lists() {
                 setLists((prev) => prev.filter((l) => l.id !== deletingList.id));
                 setShowDeleteModal(false);
                 setDeletingList(null);
-                showToast("List deleted successfully");
+                showToast(t("lists.deletedSuccess"));
             } else {
-                showToast(res.error || "Failed to delete list", "error");
+                showToast(res.error || t("lists.failedToDelete"), "error");
             }
         } catch {
-            showToast("Failed to delete list", "error");
+            showToast(t("lists.failedToDelete"), "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -158,12 +160,12 @@ export default function Lists() {
                         isActive: l.id === list.id,
                     }))
                 );
-                showToast("List activated");
+                showToast(t("lists.activatedSuccess"));
             } else {
-                showToast(res.error || "Failed to activate list", "error");
+                showToast(res.error || t("lists.failedToActivate"), "error");
             }
         } catch {
-            showToast("Failed to activate list", "error");
+            showToast(t("lists.failedToActivate"), "error");
         }
     };
 
@@ -192,22 +194,22 @@ export default function Lists() {
             try {
                 await listsApi.reorder(ids);
             } catch {
-                showToast("Failed to save order", "error");
+                showToast(t("common.failedToSaveOrder"), "error");
             }
         }
         setDraggedId(null);
     };
 
     if (isLoading) {
-        return <div className="loading">Loading lists...</div>;
+        return <div className="loading">{t("lists.loadingLists")}</div>;
     }
 
     return (
         <div className="lists-page">
             <div className="lists-header">
-                <h1>Shopping Lists</h1>
+                <h1>{t("lists.title")}</h1>
                 <button className="create-btn" onClick={openCreateModal}>
-                    + New List
+                    {t("lists.newList")}
                 </button>
             </div>
 
@@ -215,7 +217,7 @@ export default function Lists() {
 
             {lists.length === 0 ? (
                 <div className="lists-empty">
-                    <p>No shopping lists yet. Click "+ New List" to get started!</p>
+                    <p>{t("lists.emptyState")}</p>
                 </div>
             ) : (
                 <div className="lists-grid">
@@ -233,28 +235,28 @@ export default function Lists() {
                                 <span className="drag-handle">⋮⋮</span>
                                 <span className="list-icon">{list.icon}</span>
                                 <span className="list-name">{list.name}</span>
-                                {list.isActive && <span className="list-active-badge">Active</span>}
+                                {list.isActive && <span className="list-active-badge">{t("lists.active")}</span>}
                             </div>
 
                             <div className="list-meta">
-                                <span>{list.itemCount} items</span>
-                                <span>{list.sectionCount} sections</span>
+                                <span>{list.itemCount !== 1 ? t("common.items", { count: list.itemCount }) : t("common.itemSingular", { count: list.itemCount })}</span>
+                                <span>{list.sectionCount !== 1 ? t("common.sections", { count: list.sectionCount }) : t("common.sectionSingular", { count: list.sectionCount })}</span>
                             </div>
 
                             <div className="list-actions">
                                 <button className="edit-btn" onClick={(e) => { e.stopPropagation(); openEditModal(list); }}>
-                                    Edit
+                                    {t("common.edit")}
                                 </button>
                                 {!list.isActive && (
                                     <button className="activate-btn" onClick={(e) => { e.stopPropagation(); handleActivate(list); }}>
-                                        Activate
+                                        {t("lists.activate")}
                                     </button>
                                 )}
                                 <button
                                     className="delete-btn"
                                     onClick={(e) => { e.stopPropagation(); openDeleteModal(list); }}
                                 >
-                                    Delete
+                                    {t("common.delete")}
                                 </button>
                             </div>
                         </div>
@@ -265,10 +267,10 @@ export default function Lists() {
             {showCreateModal && (
                 <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
-                        <h2>Add List</h2>
+                        <h2>{t("lists.addList")}</h2>
                         <div className="modal-form">
                             <div className="form-group">
-                                <label htmlFor="name">Name</label>
+                                <label htmlFor="name">{t("common.name")}</label>
                                 <input
                                     id="name"
                                     type="text"
@@ -279,13 +281,13 @@ export default function Lists() {
                                             handleCreate();
                                         }
                                     }}
-                                    placeholder="Enter list name"
+                                    placeholder={t("lists.enterListName")}
                                     maxLength={100}
                                     autoFocus
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Icon</label>
+                                <label>{t("common.icon")}</label>
                                 <div className="icon-picker">
                                     {EMOJI_OPTIONS.map((emoji) => (
                                         <button
@@ -302,14 +304,14 @@ export default function Lists() {
                         </div>
                         <div className="modal-actions">
                             <button className="cancel-btn" onClick={() => setShowCreateModal(false)}>
-                                Cancel
+                                {t("common.cancel")}
                             </button>
                             <button
                                 className="submit-btn"
                                 onClick={handleCreate}
                                 disabled={!formName.trim() || isSubmitting}
                             >
-                                {isSubmitting ? "Adding..." : "Add"}
+                                {isSubmitting ? t("common.adding") : t("common.add")}
                             </button>
                         </div>
                     </div>
@@ -319,10 +321,10 @@ export default function Lists() {
             {showEditModal && editingList && (
                 <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
-                        <h2>Edit List</h2>
+                        <h2>{t("lists.editList")}</h2>
                         <div className="modal-form">
                             <div className="form-group">
-                                <label htmlFor="edit-name">Name</label>
+                                <label htmlFor="edit-name">{t("common.name")}</label>
                                 <input
                                     id="edit-name"
                                     type="text"
@@ -333,13 +335,13 @@ export default function Lists() {
                                             handleEdit();
                                         }
                                     }}
-                                    placeholder="Enter list name"
+                                    placeholder={t("lists.enterListName")}
                                     maxLength={100}
                                     autoFocus
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Icon</label>
+                                <label>{t("common.icon")}</label>
                                 <div className="icon-picker">
                                     {EMOJI_OPTIONS.map((emoji) => (
                                         <button
@@ -356,14 +358,14 @@ export default function Lists() {
                         </div>
                         <div className="modal-actions">
                             <button className="cancel-btn" onClick={() => setShowEditModal(false)}>
-                                Cancel
+                                {t("common.cancel")}
                             </button>
                             <button
                                 className="submit-btn"
                                 onClick={handleEdit}
                                 disabled={!formName.trim() || isSubmitting}
                             >
-                                {isSubmitting ? "Saving..." : "Save"}
+                                {isSubmitting ? t("common.saving") : t("common.save")}
                             </button>
                         </div>
                     </div>
@@ -386,23 +388,23 @@ export default function Lists() {
                             }
                         }}
                     >
-                        <h2>Delete List?</h2>
-                        <p>Are you sure you want to delete "{deletingList.name}"?</p>
+                        <h2>{t("lists.deleteList")}</h2>
+                        <p>{t("lists.deleteConfirm", { name: deletingList.name })}</p>
                         {(deletingList.itemCount > 0 || deletingList.sectionCount > 0) && (
                             <p className="warning">
-                                This will also delete {deletingList.itemCount} items and {deletingList.sectionCount} sections.
+                                {t("lists.deleteWarning", { itemCount: deletingList.itemCount, sectionCount: deletingList.sectionCount })}
                             </p>
                         )}
                         <div className="modal-actions">
                             <button className="cancel-btn" onClick={() => setShowDeleteModal(false)}>
-                                Cancel
+                                {t("common.cancel")}
                             </button>
                             <button
                                 className="submit-btn danger-btn"
                                 onClick={handleDelete}
                                 disabled={isSubmitting}
                             >
-                                {isSubmitting ? "Deleting..." : "Delete"}
+                                {isSubmitting ? t("common.deleting") : t("common.delete")}
                             </button>
                         </div>
                     </div>

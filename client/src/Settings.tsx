@@ -2,6 +2,8 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { importExportApi } from "./api/import-export";
 import type { ExportData, ExportSummary, ExportOptions, ImportPreview, ImportMode } from "shared/dist";
+import { useTranslation } from "./i18n/index";
+import type { SupportedLanguage } from "./i18n/index";
 import "./Settings.css";
 
 type Toast = {
@@ -21,6 +23,7 @@ type ImportResultData = {
 
 export default function Settings() {
     const navigate = useNavigate();
+    const { t, language, setLanguage, languages } = useTranslation();
     const [toast, setToast] = useState<Toast | null>(null);
 
     const [showExportModal, setShowExportModal] = useState(false);
@@ -68,11 +71,11 @@ export default function Settings() {
             const summary = await importExportApi.getExportSummary();
             setExportSummary(summary);
             setSelectedListIds(new Set(summary.lists.map((l) => l.id)));
-            setSelectedTemplateIds(new Set(summary.templates.map((t) => t.id)));
+            setSelectedTemplateIds(new Set(summary.templates.map((tmpl) => tmpl.id)));
             setExportHistory(true);
             setShowExportModal(true);
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Failed to load export data";
+            const message = err instanceof Error ? err.message : t("exportModal.failedToLoad");
             showToast(message, "error");
         } finally {
             setIsLoadingSummary(false);
@@ -96,10 +99,10 @@ export default function Settings() {
                 includeHistory: exportHistory,
             };
             await importExportApi.exportData(options);
-            showToast("Data exported successfully");
+            showToast(t("exportModal.exportSuccess"));
             handleCloseExport();
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Export failed";
+            const message = err instanceof Error ? err.message : t("exportModal.exportFailed");
             showToast(message, "error");
         } finally {
             setIsExporting(false);
@@ -144,7 +147,7 @@ export default function Settings() {
         if (selectedTemplateIds.size === exportSummary.templates.length) {
             setSelectedTemplateIds(new Set());
         } else {
-            setSelectedTemplateIds(new Set(exportSummary.templates.map((t) => t.id)));
+            setSelectedTemplateIds(new Set(exportSummary.templates.map((tmpl) => tmpl.id)));
         }
     };
 
@@ -155,13 +158,13 @@ export default function Settings() {
         if (!file) return;
 
         if (file.size > 10 * 1024 * 1024) {
-            showToast("File too large. Maximum size is 10 MB.", "error");
+            showToast(t("importModal.fileTooLarge"), "error");
             if (fileInputRef.current) fileInputRef.current.value = "";
             return;
         }
 
         if (!file.name.endsWith(".json")) {
-            showToast("Only JSON files are supported", "error");
+            showToast(t("importModal.onlyJson"), "error");
             if (fileInputRef.current) fileInputRef.current.value = "";
             return;
         }
@@ -172,14 +175,14 @@ export default function Settings() {
             try {
                 raw = JSON.parse(text);
             } catch {
-                showToast("Invalid JSON format", "error");
+                showToast(t("importModal.invalidJson"), "error");
                 if (fileInputRef.current) fileInputRef.current.value = "";
                 return;
             }
 
             const obj = raw as Record<string, unknown>;
             if (!(obj.version && obj.exported_at && Array.isArray(obj.lists))) {
-                showToast("Unrecognized file format", "error");
+                showToast(t("importModal.unrecognizedFormat"), "error");
                 if (fileInputRef.current) fileInputRef.current.value = "";
                 return;
             }
@@ -193,7 +196,7 @@ export default function Settings() {
             setImportPreview(preview);
             setImportStep("preview");
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Failed to read file";
+            const message = err instanceof Error ? err.message : t("importModal.failedToRead");
             showToast(message, "error");
         }
 
@@ -220,7 +223,7 @@ export default function Settings() {
             setImportResult(result);
             setImportStep("result");
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Import failed";
+            const message = err instanceof Error ? err.message : t("importModal.importFailed");
             setImportError(message);
             setImportStep("options");
         }
@@ -242,19 +245,43 @@ export default function Settings() {
         <div className="settings-page">
             <div className="settings-header">
                 <button className="back-btn" onClick={() => navigate("/")}>
-                    Back
+                    {t("common.back")}
                 </button>
-                <h1>Settings</h1>
+                <h1>{t("settings.title")}</h1>
             </div>
 
             <div className="settings-section">
-                <h2>Data Management</h2>
+                <h2>{t("settings.language")}</h2>
+                <div className="settings-card">
+                    <div className="settings-card-header">
+                        <h3>{t("settings.language")}</h3>
+                        <p className="settings-card-description">
+                            {t("settings.languageDescription")}
+                        </p>
+                    </div>
+                    <div className="language-selector">
+                        {languages.map((lang) => (
+                            <button
+                                key={lang.code}
+                                className={`language-option ${language === lang.code ? "active" : ""}`}
+                                onClick={() => setLanguage(lang.code as SupportedLanguage)}
+                            >
+                                <span className="language-native-name">{lang.nativeName}</span>
+                                <span className="language-code">{lang.code}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            <div className="settings-section">
+                <h2>{t("settings.dataManagement")}</h2>
 
                 <div className="settings-card">
                     <div className="settings-card-header">
-                        <h3>Export</h3>
+                        <h3>{t("settings.exportTitle")}</h3>
                         <p className="settings-card-description">
-                            Download a JSON backup of your lists, templates, and history.
+                            {t("settings.exportDescription")}
                         </p>
                     </div>
                     <button
@@ -262,15 +289,15 @@ export default function Settings() {
                         onClick={handleOpenExport}
                         disabled={isLoadingSummary}
                     >
-                        {isLoadingSummary ? "Loading..." : "Export"}
+                        {isLoadingSummary ? t("settings.exportLoading") : t("settings.exportBtn")}
                     </button>
                 </div>
 
                 <div className="settings-card">
                     <div className="settings-card-header">
-                        <h3>Import Data</h3>
+                        <h3>{t("settings.importTitle")}</h3>
                         <p className="settings-card-description">
-                            Import data from a previously exported JSON backup file.
+                            {t("settings.importDescription")}
                         </p>
                     </div>
                     <input
@@ -284,7 +311,7 @@ export default function Settings() {
                         className="settings-action-btn import-btn"
                         onClick={() => fileInputRef.current?.click()}
                     >
-                        Import
+                        {t("settings.importBtn")}
                     </button>
                 </div>
             </div>
@@ -300,17 +327,17 @@ export default function Settings() {
                             if (e.key === "Escape") handleCloseExport();
                         }}
                     >
-                        <h2>Export Data</h2>
+                        <h2>{t("exportModal.title")}</h2>
 
                         {exportSummary.lists.length > 0 && (
                             <div className="export-group">
                                 <div className="export-group-header">
-                                    <label className="option-label">Lists</label>
+                                    <label className="option-label">{t("exportModal.lists")}</label>
                                     <button
                                         className="select-toggle-btn"
                                         onClick={toggleAllLists}
                                     >
-                                        {selectedListIds.size === exportSummary.lists.length ? "Deselect All" : "Select All"}
+                                        {selectedListIds.size === exportSummary.lists.length ? t("exportModal.deselectAll") : t("exportModal.selectAll")}
                                     </button>
                                 </div>
                                 <div className="export-selection-list">
@@ -323,7 +350,7 @@ export default function Settings() {
                                             />
                                             <span className="export-item-icon">{list.icon}</span>
                                             <span className="export-item-name">{list.name}</span>
-                                            <span className="export-item-count">{list.itemCount} item{list.itemCount !== 1 ? "s" : ""}</span>
+                                            <span className="export-item-count">{list.itemCount !== 1 ? t("exportModal.itemCount", { count: list.itemCount }) : t("exportModal.itemCountSingular", { count: list.itemCount })}</span>
                                         </label>
                                     ))}
                                 </div>
@@ -333,12 +360,12 @@ export default function Settings() {
                         {exportSummary.templates.length > 0 && (
                             <div className="export-group">
                                 <div className="export-group-header">
-                                    <label className="option-label">Templates</label>
+                                    <label className="option-label">{t("exportModal.templates")}</label>
                                     <button
                                         className="select-toggle-btn"
                                         onClick={toggleAllTemplates}
                                     >
-                                        {selectedTemplateIds.size === exportSummary.templates.length ? "Deselect All" : "Select All"}
+                                        {selectedTemplateIds.size === exportSummary.templates.length ? t("exportModal.deselectAll") : t("exportModal.selectAll")}
                                     </button>
                                 </div>
                                 <div className="export-selection-list">
@@ -350,7 +377,7 @@ export default function Settings() {
                                                 onChange={() => toggleTemplateId(template.id)}
                                             />
                                             <span className="export-item-name">{template.name}</span>
-                                            <span className="export-item-count">{template.itemCount} item{template.itemCount !== 1 ? "s" : ""}</span>
+                                            <span className="export-item-count">{template.itemCount !== 1 ? t("exportModal.itemCount", { count: template.itemCount }) : t("exportModal.itemCountSingular", { count: template.itemCount })}</span>
                                         </label>
                                     ))}
                                 </div>
@@ -365,26 +392,26 @@ export default function Settings() {
                                         checked={exportHistory}
                                         onChange={(e) => setExportHistory(e.target.checked)}
                                     />
-                                    <span className="export-item-name">History</span>
-                                    <span className="export-item-count">{exportSummary.historyCount} item{exportSummary.historyCount !== 1 ? "s" : ""}</span>
+                                    <span className="export-item-name">{t("exportModal.history")}</span>
+                                    <span className="export-item-count">{exportSummary.historyCount !== 1 ? t("exportModal.itemCount", { count: exportSummary.historyCount }) : t("exportModal.itemCountSingular", { count: exportSummary.historyCount })}</span>
                                 </label>
                             </div>
                         )}
 
                         {exportSummary.lists.length === 0 && exportSummary.templates.length === 0 && exportSummary.historyCount === 0 && (
-                            <p className="export-empty">No data available to export.</p>
+                            <p className="export-empty">{t("exportModal.emptyState")}</p>
                         )}
 
                         <div className="modal-actions">
                             <button className="cancel-btn" onClick={handleCloseExport}>
-                                Cancel
+                                {t("common.cancel")}
                             </button>
                             <button
                                 className="submit-btn"
                                 onClick={handleExport}
                                 disabled={isExporting || !exportHasSelection}
                             >
-                                {isExporting ? "Exporting..." : "Export"}
+                                {isExporting ? t("exportModal.exporting") : t("settings.exportBtn")}
                             </button>
                         </div>
                     </div>
@@ -404,28 +431,28 @@ export default function Settings() {
                     >
                         {importStep === "preview" && importPreview && (
                             <>
-                                <h2>Import Preview</h2>
+                                <h2>{t("importModal.previewTitle")}</h2>
                                 <div className="import-preview-stats">
                                     <div className="preview-stat">
                                         <span className="stat-count">{importPreview.listCount}</span>
-                                        <span className="stat-label">Lists</span>
+                                        <span className="stat-label">{t("importModal.listsLabel")}</span>
                                     </div>
                                     <div className="preview-stat">
                                         <span className="stat-count">{importPreview.templateCount}</span>
-                                        <span className="stat-label">Templates</span>
+                                        <span className="stat-label">{t("importModal.templatesLabel")}</span>
                                     </div>
                                     <div className="preview-stat">
                                         <span className="stat-count">{importPreview.historyCount}</span>
-                                        <span className="stat-label">History Items</span>
+                                        <span className="stat-label">{t("importModal.historyLabel")}</span>
                                     </div>
                                 </div>
 
                                 {(importPreview.existingListConflicts.length > 0 || importPreview.existingTemplateConflicts.length > 0) && (
                                     <div className="import-conflicts">
-                                        <h3>Conflicts with Existing Data</h3>
+                                        <h3>{t("importModal.conflictsTitle")}</h3>
                                         {importPreview.existingListConflicts.length > 0 && (
                                             <div className="conflict-group">
-                                                <p className="conflict-label">Lists:</p>
+                                                <p className="conflict-label">{t("importModal.conflictsLists")}</p>
                                                 <ul>
                                                     {importPreview.existingListConflicts.map((name) => (
                                                         <li key={name}>{name}</li>
@@ -435,7 +462,7 @@ export default function Settings() {
                                         )}
                                         {importPreview.existingTemplateConflicts.length > 0 && (
                                             <div className="conflict-group">
-                                                <p className="conflict-label">Templates:</p>
+                                                <p className="conflict-label">{t("importModal.conflictsTemplates")}</p>
                                                 <ul>
                                                     {importPreview.existingTemplateConflicts.map((name) => (
                                                         <li key={name}>{name}</li>
@@ -448,10 +475,10 @@ export default function Settings() {
 
                                 <div className="modal-actions">
                                     <button className="cancel-btn" onClick={handleCloseImport}>
-                                        Cancel
+                                        {t("common.cancel")}
                                     </button>
                                     <button className="submit-btn" onClick={handleProceedToOptions}>
-                                        Continue
+                                        {t("importModal.continue")}
                                     </button>
                                 </div>
                             </>
@@ -459,7 +486,7 @@ export default function Settings() {
 
                         {importStep === "options" && (
                             <>
-                                <h2>Import Options</h2>
+                                <h2>{t("importModal.optionsTitle")}</h2>
 
                                 {importError && (
                                     <div className="error-message">{importError}</div>
@@ -467,7 +494,7 @@ export default function Settings() {
 
                                 <div className="import-options">
                                     <div className="option-group">
-                                        <label className="option-label">Import Mode</label>
+                                        <label className="option-label">{t("importModal.importModeLabel")}</label>
                                         <div className="import-mode-options">
                                             <label className="radio-option">
                                                 <input
@@ -478,8 +505,8 @@ export default function Settings() {
                                                     onChange={() => setImportMode("merge")}
                                                 />
                                                 <div>
-                                                    <span className="radio-label">Merge</span>
-                                                    <span className="radio-description">Add new data, merge into existing lists</span>
+                                                    <span className="radio-label">{t("importModal.mergeName")}</span>
+                                                    <span className="radio-description">{t("importModal.mergeDescription")}</span>
                                                 </div>
                                             </label>
                                             <label className="radio-option">
@@ -491,15 +518,15 @@ export default function Settings() {
                                                     onChange={() => setImportMode("replace")}
                                                 />
                                                 <div>
-                                                    <span className="radio-label">Replace</span>
-                                                    <span className="radio-description">Clear existing data first</span>
+                                                    <span className="radio-label">{t("importModal.replaceName")}</span>
+                                                    <span className="radio-description">{t("importModal.replaceDescription")}</span>
                                                 </div>
                                             </label>
                                         </div>
                                     </div>
 
                                     <div className="option-group">
-                                        <label className="option-label">What to Import</label>
+                                        <label className="option-label">{t("importModal.whatToImport")}</label>
                                         <div className="checkbox-options">
                                             <label className="checkbox-option">
                                                 <input
@@ -507,7 +534,7 @@ export default function Settings() {
                                                     checked={importLists}
                                                     onChange={(e) => setImportLists(e.target.checked)}
                                                 />
-                                                <span>Lists ({importPreview?.listCount ?? 0})</span>
+                                                <span>{t("importModal.listsCount", { count: importPreview?.listCount ?? 0 })}</span>
                                             </label>
                                             <label className="checkbox-option">
                                                 <input
@@ -515,7 +542,7 @@ export default function Settings() {
                                                     checked={importTemplates}
                                                     onChange={(e) => setImportTemplates(e.target.checked)}
                                                 />
-                                                <span>Templates ({importPreview?.templateCount ?? 0})</span>
+                                                <span>{t("importModal.templatesCount", { count: importPreview?.templateCount ?? 0 })}</span>
                                             </label>
                                             <label className="checkbox-option">
                                                 <input
@@ -523,7 +550,7 @@ export default function Settings() {
                                                     checked={importHistory}
                                                     onChange={(e) => setImportHistory(e.target.checked)}
                                                 />
-                                                <span>History ({importPreview?.historyCount ?? 0})</span>
+                                                <span>{t("importModal.historyCount", { count: importPreview?.historyCount ?? 0 })}</span>
                                             </label>
                                         </div>
                                     </div>
@@ -531,14 +558,14 @@ export default function Settings() {
 
                                 <div className="modal-actions">
                                     <button className="cancel-btn" onClick={() => setImportStep("preview")}>
-                                        Back
+                                        {t("common.back")}
                                     </button>
                                     <button
                                         className="submit-btn"
                                         onClick={handleImport}
                                         disabled={!importLists && !importTemplates && !importHistory}
                                     >
-                                        Import
+                                        {t("importModal.import")}
                                     </button>
                                 </div>
                             </>
@@ -546,35 +573,43 @@ export default function Settings() {
 
                         {importStep === "importing" && (
                             <div className="import-loading">
-                                <h2>Importing...</h2>
-                                <p>Please wait while your data is being imported.</p>
+                                <h2>{t("importModal.importingTitle")}</h2>
+                                <p>{t("importModal.importingMessage")}</p>
                             </div>
                         )}
 
                         {importStep === "result" && importResult && (
                             <>
-                                <h2>Import Complete</h2>
+                                <h2>{t("importModal.resultTitle")}</h2>
                                 <div className="import-result-stats">
                                     {importResult.listsImported > 0 && (
-                                        <p>{importResult.listsImported} list{importResult.listsImported !== 1 ? "s" : ""} imported</p>
+                                        <p>{importResult.listsImported !== 1
+                                            ? t("importModal.listsImported", { count: importResult.listsImported })
+                                            : t("importModal.listImported", { count: importResult.listsImported })}</p>
                                     )}
                                     {importResult.listsMerged > 0 && (
-                                        <p>{importResult.listsMerged} list{importResult.listsMerged !== 1 ? "s" : ""} merged</p>
+                                        <p>{importResult.listsMerged !== 1
+                                            ? t("importModal.listsMerged", { count: importResult.listsMerged })
+                                            : t("importModal.listMerged", { count: importResult.listsMerged })}</p>
                                     )}
                                     {importResult.templatesImported > 0 && (
-                                        <p>{importResult.templatesImported} template{importResult.templatesImported !== 1 ? "s" : ""} imported</p>
+                                        <p>{importResult.templatesImported !== 1
+                                            ? t("importModal.templatesImported", { count: importResult.templatesImported })
+                                            : t("importModal.templateImported", { count: importResult.templatesImported })}</p>
                                     )}
                                     {importResult.historyImported > 0 && (
-                                        <p>{importResult.historyImported} history item{importResult.historyImported !== 1 ? "s" : ""} imported</p>
+                                        <p>{importResult.historyImported !== 1
+                                            ? t("importModal.historyImported", { count: importResult.historyImported })
+                                            : t("importModal.historyItemImported", { count: importResult.historyImported })}</p>
                                     )}
                                     {importResult.listsImported === 0 && importResult.listsMerged === 0 && importResult.templatesImported === 0 && importResult.historyImported === 0 && (
-                                        <p>No new data was imported.</p>
+                                        <p>{t("importModal.noDataImported")}</p>
                                     )}
                                 </div>
 
                                 {importResult.skipped.length > 0 && (
                                     <div className="import-skipped">
-                                        <h3>Skipped Items ({importResult.skipped.length})</h3>
+                                        <h3>{t("importModal.skippedItems", { count: importResult.skipped.length })}</h3>
                                         <ul>
                                             {importResult.skipped.map((item, idx) => (
                                                 <li key={idx}>{item}</li>
@@ -585,7 +620,7 @@ export default function Settings() {
 
                                 <div className="modal-actions">
                                     <button className="submit-btn" onClick={handleCloseImport}>
-                                        Done
+                                        {t("common.done")}
                                     </button>
                                 </div>
                             </>

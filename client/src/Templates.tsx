@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+
 import { templatesApi, type TemplateWithItems } from "./api/templates";
+import { useTranslation } from "./i18n/index";
 import "./Templates.css";
 
 export default function Templates() {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const [templates, setTemplates] = useState<TemplateWithItems[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -42,14 +45,14 @@ export default function Templates() {
             if (res.success && res.data) {
                 setTemplates(res.data);
             } else {
-                showToast(res.error || "Failed to load templates", "error");
+                showToast(res.error || t("templates.failedToLoad"), "error");
             }
         } catch {
-            showToast("Failed to load templates", "error");
+            showToast(t("templates.failedToLoad"), "error");
         } finally {
             setIsLoading(false);
         }
-    }, [showToast]);
+    }, [showToast, t]);
 
     useEffect(() => {
         fetchTemplates();
@@ -75,13 +78,13 @@ export default function Templates() {
                 const newTemplate: TemplateWithItems = { ...res.data!, items: [] };
                 setTemplates((prev) => [...prev, newTemplate]);
                 setShowCreateModal(false);
-                showToast("Template added successfully");
+                showToast(t("templates.addedSuccess"));
                 navigate(`/templates/${newTemplate.id}`);
             } else {
-                showToast(res.error || "Failed to create template", "error");
+                showToast(res.error || t("templates.failedToCreate"), "error");
             }
         } catch {
-            showToast("Failed to create template", "error");
+            showToast(t("templates.failedToCreate"), "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -94,40 +97,40 @@ export default function Templates() {
         try {
             const res = await templatesApi.delete(deletingTemplate.id);
             if (res.success) {
-                setTemplates((prev) => prev.filter((t) => t.id !== deletingTemplate.id));
+                setTemplates((prev) => prev.filter((tpl) => tpl.id !== deletingTemplate.id));
                 setShowDeleteModal(false);
                 setDeletingTemplate(null);
-                showToast("Template deleted");
+                showToast(t("templates.deletedSuccess"));
             } else {
-                showToast(res.error || "Failed to delete template", "error");
+                showToast(res.error || t("templates.failedToDelete"), "error");
             }
         } catch {
-            showToast("Failed to delete template", "error");
+            showToast(t("templates.failedToDelete"), "error");
         } finally {
             setIsSubmitting(false);
         }
     };
 
     if (isLoading) {
-        return <div className="loading">Loading templates...</div>;
+        return <div className="loading">{t("templates.loadingTemplates")}</div>;
     }
 
     return (
         <div className="templates-page">
             <div className="templates-header">
                 <button className="back-btn" onClick={() => navigate("/")}>
-                ← Back to Lists
+                ← {t("nav.backToLists")}
             </button>
-                <h1>Templates</h1>
+                <h1>{t("templates.title")}</h1>
                 <button className="create-btn" onClick={openCreateModal}>
-                + Add Template
+                {t("templates.addTemplate")}
             </button>
             </div>
 
             {templates.length === 0 ? (
                 <div className="templates-empty">
-                    <p>No templates yet</p>
-                    <p className="templates-empty-hint">Create a template to quickly populate your shopping lists</p>
+                    <p>{t("templates.emptyState")}</p>
+                    <p className="templates-empty-hint">{t("templates.emptyHint")}</p>
                 </div>
             ) : (
                 <div className="templates-grid">
@@ -141,7 +144,7 @@ export default function Templates() {
                                 <span className="template-name">{template.name}</span>
                             </div>
                             <div className="template-meta">
-                                <span>{template.items.length} items</span>
+                                <span>{t("common.items", { count: template.items.length })}</span>
                                 <span>{new Date(template.createdAt).toLocaleDateString()}</span>
                             </div>
                             {template.items.length > 0 && (
@@ -152,7 +155,7 @@ export default function Templates() {
                                         </span>
                                     ))}
                                     {template.items.length > 3 && (
-                                        <span className="preview-more">+{template.items.length - 3} more</span>
+                                        <span className="preview-more">{t("templates.moreItems", { count: template.items.length - 3 })}</span>
                                     )}
                                 </div>
                             )}
@@ -164,7 +167,7 @@ export default function Templates() {
                                         navigate(`/templates/${template.id}`);
                                     }}
                                 >
-                                    Edit
+                                    {t("common.edit")}
                                 </button>
                                 <button
                                     className="delete-btn"
@@ -173,7 +176,7 @@ export default function Templates() {
                                         openDeleteModal(template);
                                     }}
                                 >
-                                    Delete
+                                    {t("common.delete")}
                                 </button>
                             </div>
                         </div>
@@ -197,16 +200,16 @@ export default function Templates() {
                             }
                         }}
                     >
-                        <h2>Add Template</h2>
+                        <h2>{t("templates.addTemplateTitle")}</h2>
                         <div className="modal-form">
                             <div className="form-group">
-                                <label htmlFor="template-name">Name</label>
+                                <label htmlFor="template-name">{t("common.name")}</label>
                                 <input
                                     id="template-name"
                                     type="text"
                                     value={formName}
                                     onChange={(e) => setFormName(e.target.value)}
-                                    placeholder="e.g., Weekly Groceries"
+                                    placeholder={t("templates.templateNamePlaceholder")}
                                     maxLength={100}
                                     autoFocus
                                 />
@@ -214,14 +217,14 @@ export default function Templates() {
                         </div>
                         <div className="modal-actions">
                             <button className="cancel-btn" onClick={() => setShowCreateModal(false)}>
-                                Cancel
+                                {t("common.cancel")}
                             </button>
                             <button
                                 className="submit-btn"
                                 onClick={handleCreate}
                                 disabled={!formName.trim() || isSubmitting}
                             >
-                                {isSubmitting ? "Adding..." : "Add"}
+                                {isSubmitting ? t("common.adding") : t("common.add")}
                             </button>
                         </div>
                     </div>
@@ -244,18 +247,18 @@ export default function Templates() {
                             }
                         }}
                     >
-                        <h2>Delete Template?</h2>
-                        <p>Are you sure you want to delete "{deletingTemplate.name}"?</p>
+                        <h2>{t("templates.deleteTemplate")}</h2>
+                        <p>{t("templates.deleteConfirm", { name: deletingTemplate.name })}</p>
                         <div className="modal-actions">
                             <button className="cancel-btn" onClick={() => setShowDeleteModal(false)}>
-                                Cancel
+                                {t("common.cancel")}
                             </button>
                             <button
                                 className="submit-btn danger-btn"
                                 onClick={handleDelete}
                                 disabled={isSubmitting}
                             >
-                                {isSubmitting ? "Deleting..." : "Delete"}
+                                {isSubmitting ? t("common.deleting") : t("common.delete")}
                             </button>
                         </div>
                     </div>

@@ -6,6 +6,7 @@ import { templatesApi, type TemplateWithItems } from "./api/templates";
 import { useRealtimeUpdates } from "./useRealtimeUpdates";
 import ConnectionStatus from "./ConnectionStatus";
 import { Autocomplete } from "./Autocomplete";
+import { useTranslation } from "./i18n/index";
 import "./ListDetail.css";
 
 type Toast = {
@@ -21,6 +22,7 @@ type DragState = {
 export default function ListDetail() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const listId = id ? parseInt(id, 10) : null;
 
     const [list, setList] = useState<ListWithCounts | null>(null);
@@ -134,7 +136,7 @@ export default function ListDetail() {
             if (listRes.success && listRes.data) {
                 setList(listRes.data as ListWithCounts);
             } else {
-                showToast("List not found", "error");
+                showToast(t("listDetail.listNotFound"), "error");
                 navigate("/");
                 return;
             }
@@ -143,11 +145,11 @@ export default function ListDetail() {
                 setSections(sectionsRes.data);
             }
         } catch {
-            showToast("Failed to load list", "error");
+            showToast(t("listDetail.failedToLoadList"), "error");
         } finally {
             setIsLoading(false);
         }
-    }, [listId, navigate, showToast]);
+    }, [listId, navigate, showToast, t]);
 
     useEffect(() => {
         fetchData();
@@ -176,14 +178,13 @@ export default function ListDetail() {
         try {
             const res = await sectionsApi.create(listId, sectionName.trim());
             if (res.success && res.data) {
-                // Don't do optimistic update - rely on WebSocket for consistency
                 setShowSectionModal(false);
-                showToast("Section added");
+                showToast(t("sections.sectionAdded"));
             } else {
-                showToast(res.error || "Failed to create section", "error");
+                showToast(res.error || t("sections.failedToCreate"), "error");
             }
         } catch {
-            showToast("Failed to create section", "error");
+            showToast(t("sections.failedToCreate"), "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -203,12 +204,12 @@ export default function ListDetail() {
                 );
                 setShowEditSectionModal(false);
                 setEditingSection(null);
-                showToast("Section updated");
+                showToast(t("sections.sectionUpdated"));
             } else {
-                showToast(res.error || "Failed to update section", "error");
+                showToast(res.error || t("sections.failedToUpdate"), "error");
             }
         } catch {
-            showToast("Failed to update section", "error");
+            showToast(t("sections.failedToUpdate"), "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -224,12 +225,12 @@ export default function ListDetail() {
                 setSections((prev) => prev.filter((s) => s.id !== deletingSection.id));
                 setShowDeleteSectionModal(false);
                 setDeletingSection(null);
-                showToast("Section deleted");
+                showToast(t("sections.sectionDeleted"));
             } else {
-                showToast(res.error || "Failed to delete section", "error");
+                showToast(res.error || t("sections.failedToDelete"), "error");
             }
         } catch {
-            showToast("Failed to delete section", "error");
+            showToast(t("sections.failedToDelete"), "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -284,7 +285,7 @@ export default function ListDetail() {
             try {
                 await sectionsApi.reorder(ids);
             } catch {
-                showToast("Failed to save order", "error");
+                showToast(t("common.failedToSaveOrder"), "error");
             }
         }
         setDraggedSectionId(null);
@@ -305,10 +306,10 @@ export default function ListDetail() {
                 setQuickAddQuantity("");
                 setQuickAddDescription("");
             } else {
-                showToast(res.error || "Failed to add item", "error");
+                showToast(res.error || t("listDetail.failedToAddItem"), "error");
             }
         } catch {
-            showToast("Failed to add item", "error");
+            showToast(t("listDetail.failedToAddItem"), "error");
         }
     };
 
@@ -323,10 +324,10 @@ export default function ListDetail() {
                             : s
                     )
                 );
-                showToast("Item deleted");
+                showToast(t("listDetail.itemDeleted"));
             }
         } catch {
-            showToast("Failed to delete item", "error");
+            showToast(t("listDetail.failedToDeleteItem"), "error");
         }
     };
 
@@ -364,7 +365,7 @@ export default function ListDetail() {
                 if (needsMove) {
                     const moveRes = await itemsApi.move(editingItem.item.id, itemSectionId);
                     if (!moveRes.success) {
-                        showToast(moveRes.error || "Failed to move item", "error");
+                        showToast(moveRes.error || t("listDetail.failedToMoveItem"), "error");
                         return;
                     }
                 }
@@ -398,9 +399,9 @@ export default function ListDetail() {
                     });
                     setShowEditItemModal(false);
                     setEditingItem(null);
-                    showToast(needsMove ? "Item moved and updated" : "Item updated");
+                    showToast(needsMove ? t("listDetail.itemMovedAndUpdated") : t("listDetail.itemUpdated"));
                 } else {
-                    showToast(res.error || "Failed to update item", "error");
+                    showToast(res.error || t("listDetail.failedToUpdateItem"), "error");
                 }
             } else {
                 const res = await itemsApi.create(
@@ -411,13 +412,13 @@ export default function ListDetail() {
                 );
                 if (res.success && res.data) {
                     setShowEditItemModal(false);
-                    showToast("Item added");
+                    showToast(t("listDetail.itemAdded"));
                 } else {
-                    showToast(res.error || "Failed to add item", "error");
+                    showToast(res.error || t("listDetail.failedToAddItem"), "error");
                 }
             }
         } catch {
-            showToast(editingItem ? "Failed to update item" : "Failed to add item", "error");
+            showToast(editingItem ? t("listDetail.failedToUpdateItem") : t("listDetail.failedToAddItem"), "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -471,7 +472,7 @@ export default function ListDetail() {
                 try {
                     await itemsApi.reorder(ids);
                 } catch {
-                    showToast("Failed to save order", "error");
+                    showToast(t("common.failedToSaveOrder"), "error");
                 }
             }
         }
@@ -496,7 +497,7 @@ export default function ListDetail() {
                 );
             }
         } catch {
-            showToast("Failed to update item", "error");
+            showToast(t("listDetail.failedToUpdateItem"), "error");
         }
     };
 
@@ -519,7 +520,7 @@ export default function ListDetail() {
                 );
             }
         } catch {
-            showToast("Failed to update item", "error");
+            showToast(t("listDetail.failedToUpdateItem"), "error");
         }
     };
 
@@ -558,9 +559,9 @@ export default function ListDetail() {
             );
             setShowClearCompletedModal(false);
             setClearingSection(null);
-            showToast(`Cleared ${count} completed item${count !== 1 ? "s" : ""}`);
+            showToast(t("clearCompleted.cleared", { count }));
         } catch {
-            showToast("Failed to clear completed items", "error");
+            showToast(t("clearCompleted.failedToClear"), "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -576,7 +577,7 @@ export default function ListDetail() {
                 setShowApplyTemplateModal(true);
             }
         } catch {
-            showToast("Failed to load templates", "error");
+            showToast(t("applyTemplate.failedToLoad"), "error");
         }
     };
 
@@ -613,15 +614,15 @@ export default function ListDetail() {
                 fetchData();
                 const { added, skipped } = res.data;
                 if (skipped.length > 0) {
-                    showToast(`Added ${added} items, skipped ${skipped.length} duplicates`);
+                    showToast(t("applyTemplate.addedWithSkipped", { added, skipped: skipped.length }));
                 } else {
-                    showToast(`Added ${added} items`);
+                    showToast(t("applyTemplate.addedItems", { count: added }));
                 }
             } else {
-                showToast(res.error || "Failed to apply template", "error");
+                showToast(res.error || t("applyTemplate.failedToApply"), "error");
             }
         } catch {
-            showToast("Failed to apply template", "error");
+            showToast(t("applyTemplate.failedToApply"), "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -640,23 +641,23 @@ export default function ListDetail() {
             const res = await templatesApi.createFromList(listId, templateName.trim());
             if (res.success && res.data) {
                 setShowSaveAsTemplateModal(false);
-                showToast(`Template "${res.data.name}" created with ${res.data.items.length} items`);
+                showToast(t("saveAsTemplate.createdSuccess", { name: res.data.name, count: res.data.items.length }));
             } else {
-                showToast(res.error || "Failed to create template", "error");
+                showToast(res.error || t("saveAsTemplate.failedToCreate"), "error");
             }
         } catch {
-            showToast("Failed to create template", "error");
+            showToast(t("saveAsTemplate.failedToCreate"), "error");
         } finally {
             setIsSubmitting(false);
         }
     };
 
     if (isLoading) {
-        return <div className="loading">Loading...</div>;
+        return <div className="loading">{t("common.loading")}</div>;
     }
 
     if (!list) {
-        return <div className="loading">List not found</div>;
+        return <div className="loading">{t("listDetail.listNotFound")}</div>;
     }
 
     return (
@@ -664,7 +665,7 @@ export default function ListDetail() {
             <ConnectionStatus />
             <div className="list-detail-header">
                 <button className="back-btn" onClick={() => navigate("/")}>
-                    ← Back
+                    ← {t("listDetail.backBtn")}
                 </button>
                 <div className="list-title">
                     <span className="list-title-icon">{list.icon}</span>
@@ -672,13 +673,13 @@ export default function ListDetail() {
                 </div>
                 <div className="header-actions">
                     <button className="template-btn" onClick={openApplyTemplateModal}>
-                        Apply Template
+                        {t("listDetail.applyTemplate")}
                     </button>
                     <button className="template-btn secondary" onClick={openSaveAsTemplateModal}>
-                        Save as Template
+                        {t("listDetail.saveAsTemplate")}
                     </button>
                     <button className="add-section-btn" onClick={openSectionModal}>
-                        + Add Section
+                        {t("listDetail.addSection")}
                     </button>
                 </div>
             </div>
@@ -698,7 +699,7 @@ export default function ListDetail() {
                             }
                         }}
                         onSubmit={handleQuickAdd}
-                        placeholder="Item name..."
+                        placeholder={t("listDetail.itemNamePlaceholder")}
                     />
                     <input
                         className="quick-add-quantity"
@@ -708,7 +709,7 @@ export default function ListDetail() {
                         onKeyDown={(e) => {
                             if (e.key === "Enter") handleQuickAdd();
                         }}
-                        placeholder="Qty"
+                        placeholder={t("listDetail.qtyPlaceholder")}
                     />
                     <input
                         className="quick-add-description"
@@ -718,7 +719,7 @@ export default function ListDetail() {
                         onKeyDown={(e) => {
                             if (e.key === "Enter") handleQuickAdd();
                         }}
-                        placeholder="Description"
+                        placeholder={t("listDetail.descriptionPlaceholder")}
                     />
                     <select
                         className="quick-add-section"
@@ -736,14 +737,14 @@ export default function ListDetail() {
                         onClick={handleQuickAdd}
                         disabled={!quickAddName.trim() || !quickAddSectionId}
                     >
-                        Add
+                        {t("common.add")}
                     </button>
                 </div>
             )}
 
             {sections.length === 0 ? (
                 <div className="sections-empty">
-                    <p>No sections yet. Add a section to organize your items.</p>
+                    <p>{t("listDetail.sectionsEmpty")}</p>
                 </div>
             ) : (
                 <div className="sections-list">
@@ -772,33 +773,33 @@ export default function ListDetail() {
                                             className="section-clear-btn"
                                             onClick={() => openClearCompletedModal(section)}
                                         >
-                                            Clear
+                                            {t("listDetail.clear")}
                                         </button>
                                     )}
                                     <button
                                         className="section-add-btn"
                                         onClick={() => openAddItemModal(section.id)}
                                     >
-                                        Add
+                                        {t("common.add")}
                                     </button>
                                     <button
                                         className="section-edit-btn"
                                         onClick={() => openEditSectionModal(section)}
                                     >
-                                        Edit
+                                        {t("common.edit")}
                                     </button>
                                     <button
                                         className="section-delete-btn"
                                         onClick={() => openDeleteSectionModal(section)}
                                     >
-                                        Delete
+                                        {t("common.delete")}
                                     </button>
                                 </div>
                             </div>
 
                             <div className={`section-content ${collapsedSections.has(section.id) ? "collapsed" : ""}`}>
                                 {section.items.length === 0 ? (
-                                    <div className="items-empty">No items in this section</div>
+                                    <div className="items-empty">{t("listDetail.itemsEmpty")}</div>
                                 ) : (
                                     (() => {
                                         const activeItems = section.items.filter((i) => i.status !== "completed");
@@ -848,7 +849,7 @@ export default function ListDetail() {
                                                                         <button
                                                                             className="item-uncertain-btn"
                                                                             onClick={() => handleToggleUncertain(item, section.id)}
-                                                                            title={item.status === "uncertain" ? "Remove uncertain" : "Mark as uncertain"}
+                                                                            title={item.status === "uncertain" ? t("listDetail.removeUncertain") : t("listDetail.markAsUncertain")}
                                                                         >
                                                                             ?
                                                                         </button>
@@ -856,14 +857,14 @@ export default function ListDetail() {
                                                                     <button
                                                                         className="item-edit-btn"
                                                                         onClick={() => openEditItemModal(item, section.id)}
-                                                                        title="Edit"
+                                                                        title={t("common.edit")}
                                                                     >
                                                                         ✎
                                                                     </button>
                                                                     <button
                                                                         className="item-delete-btn"
                                                                         onClick={() => openDeleteItemModal(item, section.id)}
-                                                                        title="Delete"
+                                                                        title={t("common.delete")}
                                                                     >
                                                                         ✕
                                                                     </button>
@@ -880,7 +881,7 @@ export default function ListDetail() {
                                                             onClick={() => toggleCompletedCollapse(section.id)}
                                                         >
                                                             <span className={`completed-collapse-btn ${isCompletedExpanded ? "" : "collapsed"}`}>▼</span>
-                                                            <span>Completed ({completedItems.length})</span>
+                                                            <span>{t("listDetail.completed", { count: completedItems.length })}</span>
                                                         </button>
                                                         {isCompletedExpanded && (
                                                             <div className="completed-items-list">
@@ -922,14 +923,14 @@ export default function ListDetail() {
                                                                             <button
                                                                                 className="item-edit-btn"
                                                                                 onClick={() => openEditItemModal(item, section.id)}
-                                                                                title="Edit"
+                                                                                title={t("common.edit")}
                                                                             >
                                                                                 ✎
                                                                             </button>
                                                                             <button
                                                                                 className="item-delete-btn"
                                                                                 onClick={() => openDeleteItemModal(item, section.id)}
-                                                                                title="Delete"
+                                                                                title={t("common.delete")}
                                                                             >
                                                                                 ✕
                                                                             </button>
@@ -953,10 +954,10 @@ export default function ListDetail() {
             {showSectionModal && (
                 <div className="modal-overlay" onClick={() => setShowSectionModal(false)}>
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
-                        <h2>Add Section</h2>
+                        <h2>{t("sections.addSection")}</h2>
                         <div className="modal-form">
                             <div className="form-group">
-                                <label htmlFor="section-name">Name</label>
+                                <label htmlFor="section-name">{t("common.name")}</label>
                                 <input
                                     id="section-name"
                                     type="text"
@@ -967,7 +968,7 @@ export default function ListDetail() {
                                             handleCreateSection();
                                         }
                                     }}
-                                    placeholder="Enter section name"
+                                    placeholder={t("sections.enterSectionName")}
                                     maxLength={100}
                                     autoFocus
                                 />
@@ -975,14 +976,14 @@ export default function ListDetail() {
                         </div>
                         <div className="modal-actions">
                             <button className="cancel-btn" onClick={() => setShowSectionModal(false)}>
-                                Cancel
+                                {t("common.cancel")}
                             </button>
                             <button
                                 className="submit-btn"
                                 onClick={handleCreateSection}
                                 disabled={!sectionName.trim() || isSubmitting}
                             >
-                                {isSubmitting ? "Adding..." : "Add"}
+                                {isSubmitting ? t("common.adding") : t("common.add")}
                             </button>
                         </div>
                     </div>
@@ -992,10 +993,10 @@ export default function ListDetail() {
             {showEditSectionModal && editingSection && (
                 <div className="modal-overlay" onClick={() => setShowEditSectionModal(false)}>
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
-                        <h2>Edit Section</h2>
+                        <h2>{t("sections.editSection")}</h2>
                         <div className="modal-form">
                             <div className="form-group">
-                                <label htmlFor="edit-section-name">Name</label>
+                                <label htmlFor="edit-section-name">{t("common.name")}</label>
                                 <input
                                     id="edit-section-name"
                                     type="text"
@@ -1006,7 +1007,7 @@ export default function ListDetail() {
                                             handleEditSection();
                                         }
                                     }}
-                                    placeholder="Enter section name"
+                                    placeholder={t("sections.enterSectionName")}
                                     maxLength={100}
                                     autoFocus
                                 />
@@ -1014,14 +1015,14 @@ export default function ListDetail() {
                         </div>
                         <div className="modal-actions">
                             <button className="cancel-btn" onClick={() => setShowEditSectionModal(false)}>
-                                Cancel
+                                {t("common.cancel")}
                             </button>
                             <button
                                 className="submit-btn"
                                 onClick={handleEditSection}
                                 disabled={!sectionName.trim() || isSubmitting}
                             >
-                                {isSubmitting ? "Saving..." : "Save"}
+                                {isSubmitting ? t("common.saving") : t("common.save")}
                             </button>
                         </div>
                     </div>
@@ -1044,23 +1045,23 @@ export default function ListDetail() {
                             }
                         }}
                     >
-                        <h2>Delete Section?</h2>
-                        <p>Are you sure you want to delete "{deletingSection.name}"?</p>
+                        <h2>{t("sections.deleteSection")}</h2>
+                        <p>{t("sections.deleteConfirm", { name: deletingSection.name })}</p>
                         {deletingSection.items.length > 0 && (
                             <p className="warning">
-                                This will also delete {deletingSection.items.length} item(s) in this section.
+                                {t("sections.deleteWarning", { count: deletingSection.items.length })}
                             </p>
                         )}
                         <div className="modal-actions">
                             <button className="cancel-btn" onClick={() => setShowDeleteSectionModal(false)}>
-                                Cancel
+                                {t("common.cancel")}
                             </button>
                             <button
                                 className="submit-btn danger-btn"
                                 onClick={handleDeleteSection}
                                 disabled={isSubmitting}
                             >
-                                {isSubmitting ? "Deleting..." : "Delete"}
+                                {isSubmitting ? t("common.deleting") : t("common.delete")}
                             </button>
                         </div>
                     </div>
@@ -1083,42 +1084,42 @@ export default function ListDetail() {
                             }
                         }}
                     >
-                        <h2>{editingItem ? "Edit Item" : "Add Item"}</h2>
+                        <h2>{editingItem ? t("items.editItem") : t("items.addItem")}</h2>
                         <div className="modal-form">
                             <div className="form-group">
-                                <label htmlFor="item-name">Name</label>
+                                <label htmlFor="item-name">{t("common.name")}</label>
                                 <input
                                     id="item-name"
                                     type="text"
                                     value={itemName}
                                     onChange={(e) => setItemName(e.target.value)}
-                                    placeholder="Item name"
+                                    placeholder={t("items.itemNamePlaceholder")}
                                     maxLength={200}
                                     autoFocus
                                 />
                             </div>
                             <div className="form-group">
-                                <label htmlFor="item-quantity">Quantity (optional)</label>
+                                <label htmlFor="item-quantity">{t("items.quantityLabel")}</label>
                                 <input
                                     id="item-quantity"
                                     type="text"
                                     value={itemQuantity}
                                     onChange={(e) => setItemQuantity(e.target.value)}
-                                    placeholder="e.g., 2 lbs, 3 items"
+                                    placeholder={t("items.quantityPlaceholder")}
                                 />
                             </div>
                             <div className="form-group">
-                                <label htmlFor="item-description">Description (optional)</label>
+                                <label htmlFor="item-description">{t("items.descriptionLabel")}</label>
                                 <input
                                     id="item-description"
                                     type="text"
                                     value={itemDescription}
                                     onChange={(e) => setItemDescription(e.target.value)}
-                                    placeholder="Description"
+                                    placeholder={t("items.descriptionPlaceholder")}
                                 />
                             </div>
                             <div className="form-group">
-                                <label htmlFor="item-section">Section</label>
+                                <label htmlFor="item-section">{t("items.sectionLabel")}</label>
                                 <select
                                     id="item-section"
                                     value={itemSectionId || ""}
@@ -1134,14 +1135,14 @@ export default function ListDetail() {
                         </div>
                         <div className="modal-actions">
                             <button className="cancel-btn" onClick={() => setShowEditItemModal(false)}>
-                                Cancel
+                                {t("common.cancel")}
                             </button>
                             <button
                                 className="submit-btn"
                                 onClick={handleSaveItem}
                                 disabled={!itemName.trim() || isSubmitting}
                             >
-                                {isSubmitting ? "Saving..." : editingItem ? "Save" : "Add"}
+                                {isSubmitting ? t("common.saving") : editingItem ? t("common.save") : t("common.add")}
                             </button>
                         </div>
                     </div>
@@ -1164,18 +1165,18 @@ export default function ListDetail() {
                             }
                         }}
                     >
-                        <h2>Delete Item?</h2>
-                        <p>Are you sure you want to delete "{deletingItem.item.name}"?</p>
+                        <h2>{t("items.deleteItem")}</h2>
+                        <p>{t("items.deleteConfirm", { name: deletingItem.item.name })}</p>
                         <div className="modal-actions">
                             <button className="cancel-btn" onClick={() => setShowDeleteItemModal(false)}>
-                                Cancel
+                                {t("common.cancel")}
                             </button>
                             <button
                                 className="submit-btn danger-btn"
                                 onClick={handleConfirmDeleteItem}
                                 disabled={isSubmitting}
                             >
-                                {isSubmitting ? "Deleting..." : "Delete"}
+                                {isSubmitting ? t("common.deleting") : t("common.delete")}
                             </button>
                         </div>
                     </div>
@@ -1198,21 +1199,20 @@ export default function ListDetail() {
                             }
                         }}
                     >
-                        <h2>Clear Completed Items?</h2>
+                        <h2>{t("clearCompleted.title")}</h2>
                         <p>
-                            Remove {clearingSection.items.filter((i) => i.status === "completed").length} completed item(s)
-                            from "{clearingSection.name}"?
+                            {t("clearCompleted.message", { count: clearingSection.items.filter((i) => i.status === "completed").length, name: clearingSection.name })}
                         </p>
                         <div className="modal-actions">
                             <button className="cancel-btn" onClick={() => setShowClearCompletedModal(false)}>
-                                Cancel
+                                {t("common.cancel")}
                             </button>
                             <button
                                 className="submit-btn danger-btn"
                                 onClick={handleClearCompleted}
                                 disabled={isSubmitting}
                             >
-                                {isSubmitting ? "Clearing..." : "Clear"}
+                                {isSubmitting ? t("common.clearing") : t("listDetail.clear")}
                             </button>
                         </div>
                     </div>
@@ -1232,11 +1232,11 @@ export default function ListDetail() {
                             }
                         }}
                     >
-                        <h2>Apply Template</h2>
+                        <h2>{t("applyTemplate.title")}</h2>
                         {!selectedTemplate ? (
                             <>
                                 {availableTemplates.length === 0 ? (
-                                    <p className="no-templates">No templates available. Create a template first.</p>
+                                    <p className="no-templates">{t("applyTemplate.noTemplates")}</p>
                                 ) : (
                                     <div className="template-list">
                                         {availableTemplates.map((template) => (
@@ -1255,9 +1255,9 @@ export default function ListDetail() {
                         ) : (
                             <>
                                 <p className="selected-template-name">
-                                    Template: <strong>{selectedTemplate.name}</strong>
+                                    {t("applyTemplate.templateLabel")} <strong>{selectedTemplate.name}</strong>
                                 </p>
-                                <p className="select-items-hint">Select items to add:</p>
+                                <p className="select-items-hint">{t("applyTemplate.selectItemsHint")}</p>
                                 <div className="template-items-list">
                                     {selectedTemplate.items.map((item) => (
                                         <label key={item.id} className="template-item-checkbox">
@@ -1275,14 +1275,14 @@ export default function ListDetail() {
                                 </div>
                                 <div className="modal-actions">
                                     <button className="cancel-btn" onClick={() => setSelectedTemplate(null)}>
-                                        Back
+                                        {t("common.back")}
                                     </button>
                                     <button
                                         className="submit-btn"
                                         onClick={handleApplyTemplate}
                                         disabled={selectedItemIds.size === 0 || isSubmitting}
                                     >
-                                        {isSubmitting ? "Adding..." : `Add ${selectedItemIds.size} Items`}
+                                        {isSubmitting ? t("common.adding") : t("applyTemplate.addItems", { count: selectedItemIds.size })}
                                     </button>
                                 </div>
                             </>
@@ -1307,19 +1307,19 @@ export default function ListDetail() {
                             }
                         }}
                     >
-                        <h2>Save as Template</h2>
+                        <h2>{t("saveAsTemplate.title")}</h2>
                         <p className="modal-description">
-                            Create a template from this list with {sections.reduce((acc, s) => acc + s.items.length, 0)} items.
+                            {t("saveAsTemplate.description", { count: sections.reduce((acc, s) => acc + s.items.length, 0) })}
                         </p>
                         <div className="modal-form">
                             <div className="form-group">
-                                <label htmlFor="template-name">Template Name</label>
+                                <label htmlFor="template-name">{t("saveAsTemplate.templateNameLabel")}</label>
                                 <input
                                     id="template-name"
                                     type="text"
                                     value={templateName}
                                     onChange={(e) => setTemplateName(e.target.value)}
-                                    placeholder="e.g., Weekly Groceries"
+                                    placeholder={t("saveAsTemplate.templateNamePlaceholder")}
                                     maxLength={100}
                                     autoFocus
                                 />
@@ -1327,14 +1327,14 @@ export default function ListDetail() {
                         </div>
                         <div className="modal-actions">
                             <button className="cancel-btn" onClick={() => setShowSaveAsTemplateModal(false)}>
-                                Cancel
+                                {t("common.cancel")}
                             </button>
                             <button
                                 className="submit-btn"
                                 onClick={handleSaveAsTemplate}
                                 disabled={!templateName.trim() || isSubmitting}
                             >
-                                {isSubmitting ? "Saving..." : "Save Template"}
+                                {isSubmitting ? t("common.saving") : t("items.saveTemplate")}
                             </button>
                         </div>
                     </div>

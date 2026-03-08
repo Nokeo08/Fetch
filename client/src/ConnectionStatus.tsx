@@ -1,8 +1,10 @@
 import { useSyncStatus } from "./WebSocketContext";
+import { useTranslation } from "./i18n/index";
 import "./ConnectionStatus.css";
 
 export default function ConnectionStatus() {
     const status = useSyncStatus();
+    const { t } = useTranslation();
 
     if (status === "connected") {
         return null;
@@ -10,9 +12,9 @@ export default function ConnectionStatus() {
 
     return (
         <div className={`connection-status ${status}`}>
-            {status === "connecting" && "Connecting..."}
-            {status === "reconnecting" && "Reconnecting..."}
-            {status === "disconnected" && "Disconnected"}
+            {status === "connecting" && t("connection.connecting")}
+            {status === "reconnecting" && t("connection.reconnecting")}
+            {status === "disconnected" && t("connection.disconnected")}
         </div>
     );
 }

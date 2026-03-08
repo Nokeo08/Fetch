@@ -12,6 +12,7 @@ import Settings from "./Settings.tsx";
 import { AuthProvider, useAuth } from "./AuthContext.tsx";
 import { WebSocketProvider } from "./WebSocketContext.tsx";
 import { OfflineProvider } from "./OfflineContext.tsx";
+import { I18nProvider, useTranslation } from "./i18n/index.ts";
 
 const queryClient = new QueryClient();
 
@@ -33,9 +34,10 @@ if (!rootElement) {
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const { isAuthenticated, isLoading } = useAuth();
+    const { t } = useTranslation();
 
     if (isLoading) {
-        return <div className="loading">Loading...</div>;
+        return <div className="loading">{t("common.loading")}</div>;
     }
 
     if (!isAuthenticated) {
@@ -47,9 +49,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AppRoutes() {
     const { isAuthenticated, isLoading } = useAuth();
+    const { t } = useTranslation();
 
     if (isLoading) {
-        return <div className="loading">Loading...</div>;
+        return <div className="loading">{t("common.loading")}</div>;
     }
 
     return (
@@ -109,13 +112,15 @@ function Main() {
         <StrictMode>
             <QueryClientProvider client={queryClient}>
                 <BrowserRouter>
-                    <AuthProvider>
-                        <OfflineProvider>
-                            <WebSocketProvider>
-                                <AppRoutes />
-                            </WebSocketProvider>
-                        </OfflineProvider>
-                    </AuthProvider>
+                    <I18nProvider>
+                        <AuthProvider>
+                            <OfflineProvider>
+                                <WebSocketProvider>
+                                    <AppRoutes />
+                                </WebSocketProvider>
+                            </OfflineProvider>
+                        </AuthProvider>
+                    </I18nProvider>
                 </BrowserRouter>
             </QueryClientProvider>
         </StrictMode>

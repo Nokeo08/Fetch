@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
+import { useTranslation } from "./i18n/index";
 import Lists from "./Lists";
 import ConnectionStatus from "./ConnectionStatus";
 import OfflineBanner from "./OfflineBanner";
@@ -8,6 +9,7 @@ import "./App.css";
 function App() {
     const { logout } = useAuth();
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     const handleLogout = async () => {
         await logout();
@@ -18,16 +20,16 @@ function App() {
             <ConnectionStatus />
             <OfflineBanner />
             <header className="app-header">
-                <h1>Fetch</h1>
+                <h1>{t("app.name")}</h1>
                 <div className="header-nav">
                     <button className="nav-btn" onClick={() => navigate("/templates")}>
-                        Templates
+                        {t("nav.templates")}
                     </button>
                     <button className="nav-btn" onClick={() => navigate("/settings")}>
-                        Settings
+                        {t("nav.settings")}
                     </button>
                     <button className="logout-btn" onClick={handleLogout}>
-                        Logout
+                        {t("auth.logout")}
                     </button>
                 </div>
             </header>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
+import { useTranslation } from "./i18n/index";
 import "./Login.css";
 
 export default function Login() {
@@ -9,6 +10,7 @@ export default function Login() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -20,10 +22,10 @@ export default function Login() {
             if (success) {
                 navigate("/");
             } else {
-                setError("Invalid password");
+                setError(t("auth.invalidPassword"));
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Login failed");
+            setError(err instanceof Error ? err.message : t("auth.loginFailed"));
         } finally {
             setIsSubmitting(false);
         }
@@ -32,18 +34,18 @@ export default function Login() {
     return (
         <div className="login-container">
             <div className="login-card">
-                <h1>Fetch</h1>
-                <p>Sign in to access your shopping lists</p>
+                <h1>{t("app.name")}</h1>
+                <p>{t("app.tagline")}</p>
 
                 <form onSubmit={handleSubmit} className="login-form">
                     <div className="form-group">
-                        <label htmlFor="password">Password</label>
+                        <label htmlFor="password">{t("auth.password")}</label>
                         <input
                             type="password"
                             id="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Enter your password"
+                            placeholder={t("auth.passwordPlaceholder")}
                             required
                             autoFocus
                         />
@@ -56,7 +58,7 @@ export default function Login() {
                         disabled={isSubmitting}
                         className="login-button"
                     >
-                        {isSubmitting ? "Signing in..." : "Sign In"}
+                        {isSubmitting ? t("auth.signingIn") : t("auth.signIn")}
                     </button>
                 </form>
             </div>

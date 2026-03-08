@@ -1,8 +1,10 @@
 import { useOffline } from "./OfflineContext";
+import { useTranslation } from "./i18n/index";
 import "./OfflineBanner.css";
 
 export default function OfflineBanner() {
     const { status, pendingCount, lastSyncTime, syncNow } = useOffline();
+    const { t } = useTranslation();
 
     if (status === "online" && pendingCount === 0) {
         return null;
@@ -11,24 +13,24 @@ export default function OfflineBanner() {
     return (
         <div className={`offline-banner ${status}`}>
             {status === "offline" && (
-                <span>You are offline. Changes will sync when connection is restored.</span>
+                <span>{t("offline.offlineMessage")}</span>
             )}
             {status === "syncing" && (
-                <span>Syncing {pendingCount} pending change{pendingCount !== 1 ? "s" : ""}...</span>
+                <span>{pendingCount !== 1 ? t("offline.syncing", { count: pendingCount }) : t("offline.syncingSingular", { count: pendingCount })}</span>
             )}
             {status === "online" && pendingCount > 0 && (
                 <span>
-                    {pendingCount} pending change{pendingCount !== 1 ? "s" : ""} waiting to sync
+                    {pendingCount !== 1 ? t("offline.pendingChanges", { count: pendingCount }) : t("offline.pendingChangeSingular", { count: pendingCount })}
                 </span>
             )}
             {(status === "online" || status === "syncing") && pendingCount > 0 && (
                 <button className="sync-button" onClick={syncNow} disabled={status === "syncing"}>
-                    {status === "syncing" ? "Syncing..." : "Sync Now"}
+                    {status === "syncing" ? t("offline.syncingBtn") : t("offline.syncNow")}
                 </button>
             )}
             {status === "offline" && lastSyncTime && (
                 <span className="last-sync">
-                    Last synced: {lastSyncTime.toLocaleTimeString()}
+                    {t("offline.lastSynced")} {lastSyncTime.toLocaleTimeString()}
                 </span>
             )}
         </div>

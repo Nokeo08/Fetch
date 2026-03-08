@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { TemplateItem } from "shared/dist";
 import { templatesApi, type TemplateWithItems } from "./api/templates";
+import { useTranslation } from "./i18n/index";
 import "./TemplateDetail.css";
 
 type Toast = {
@@ -16,6 +17,7 @@ type DragState = {
 export default function TemplateDetail() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const templateId = id ? parseInt(id, 10) : null;
 
     const [template, setTemplate] = useState<TemplateWithItems | null>(null);
@@ -74,14 +76,14 @@ export default function TemplateDetail() {
                 setTemplate(res.data);
                 setTemplateName(res.data.name);
             } else {
-                showToast(res.error || "Failed to load template", "error");
+                showToast(res.error || t("templateDetail.failedToLoad"), "error");
             }
         } catch {
-            showToast("Failed to load template", "error");
+            showToast(t("templateDetail.failedToLoad"), "error");
         } finally {
             setIsLoading(false);
         }
-    }, [templateId, showToast]);
+    }, [templateId, showToast, t]);
 
     useEffect(() => {
         fetchTemplate();
@@ -102,12 +104,12 @@ export default function TemplateDetail() {
             if (res.success && res.data) {
                 setTemplate((prev) => (prev ? { ...prev, name: res.data!.name } : null));
                 setShowEditNameModal(false);
-                showToast("Template name updated");
+                showToast(t("templateDetail.nameUpdated"));
             } else {
-                showToast(res.error || "Failed to update template", "error");
+                showToast(res.error || t("templateDetail.failedToUpdateName"), "error");
             }
         } catch {
-            showToast("Failed to update template", "error");
+            showToast(t("templateDetail.failedToUpdateName"), "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -123,12 +125,12 @@ export default function TemplateDetail() {
                     prev ? { ...prev, items: [...prev.items, res.data!] } : null
                 );
                 setNewItemName("");
-                showToast("Item added");
+                showToast(t("templateDetail.itemAdded"));
             } else {
-                showToast(res.error || "Failed to add item", "error");
+                showToast(res.error || t("templateDetail.failedToAddItem"), "error");
             }
         } catch {
-            showToast("Failed to add item", "error");
+            showToast(t("templateDetail.failedToAddItem"), "error");
         }
     };
 
@@ -170,12 +172,12 @@ export default function TemplateDetail() {
                 );
                 setShowEditItemModal(false);
                 setEditingItem(null);
-                showToast("Item updated");
+                showToast(t("templateDetail.itemUpdated"));
             } else {
-                showToast(res.error || "Failed to update item", "error");
+                showToast(res.error || t("templateDetail.failedToUpdateItem"), "error");
             }
         } catch {
-            showToast("Failed to update item", "error");
+            showToast(t("templateDetail.failedToUpdateItem"), "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -195,12 +197,12 @@ export default function TemplateDetail() {
                 );
                 setShowDeleteItemModal(false);
                 setDeletingItem(null);
-                showToast("Item deleted");
+                showToast(t("templateDetail.itemDeleted"));
             } else {
-                showToast(res.error || "Failed to delete item", "error");
+                showToast(res.error || t("templateDetail.failedToDeleteItem"), "error");
             }
         } catch {
-            showToast("Failed to delete item", "error");
+            showToast(t("templateDetail.failedToDeleteItem"), "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -233,36 +235,36 @@ export default function TemplateDetail() {
             try {
                 await templatesApi.reorderItems(template.id, ids);
             } catch {
-                showToast("Failed to save order", "error");
+                showToast(t("common.failedToSaveOrder"), "error");
             }
         }
         setDragState(null);
     };
 
     if (isLoading) {
-        return <div className="loading">Loading template...</div>;
+        return <div className="loading">{t("templateDetail.loadingTemplate")}</div>;
     }
 
     if (!template) {
-        return <div className="loading">Template not found</div>;
+        return <div className="loading">{t("templateDetail.templateNotFound")}</div>;
     }
 
     return (
         <div className="template-detail-page">
             <div className="template-detail-header">
                 <button className="back-btn" onClick={() => navigate("/templates")}>
-                    ← Back
+                    ← {t("common.back")}
                 </button>
                 <h1>{template.name}</h1>
                 <button className="edit-name-btn" onClick={openEditNameModal}>
-                    Edit Name
+                    {t("templateDetail.editName")}
                 </button>
             </div>
 
             <div className="add-item-form">
                 <input
                     type="text"
-                    placeholder="Add item..."
+                    placeholder={t("templateDetail.addItemPlaceholder")}
                     value={newItemName}
                     onChange={(e) => setNewItemName(e.target.value)}
                     onKeyDown={(e) => {
@@ -272,12 +274,12 @@ export default function TemplateDetail() {
                     }}
                 />
                 <button className="add-item-btn" onClick={handleAddItem}>
-                    Add
+                    {t("common.add")}
                 </button>
             </div>
 
             {template.items.length === 0 ? (
-                <div className="items-empty">No items in this template</div>
+                <div className="items-empty">{t("templateDetail.itemsEmpty")}</div>
             ) : (
                 <div className="items-list">
                     {template.items.map((item) => (
@@ -301,14 +303,14 @@ export default function TemplateDetail() {
                                 <button
                                     className="item-edit-btn"
                                     onClick={() => openEditItemModal(item)}
-                                    title="Edit"
+                                    title={t("common.edit")}
                                 >
                                     ✎
                                 </button>
                                 <button
                                     className="item-delete-btn"
                                     onClick={() => openDeleteItemModal(item)}
-                                    title="Delete"
+                                    title={t("common.delete")}
                                 >
                                     ✕
                                 </button>
@@ -334,16 +336,16 @@ export default function TemplateDetail() {
                             }
                         }}
                     >
-                        <h2>Edit Template Name</h2>
+                        <h2>{t("templateDetail.editTemplateName")}</h2>
                         <div className="modal-form">
                             <div className="form-group">
-                                <label htmlFor="template-name">Name</label>
+                                <label htmlFor="template-name">{t("common.name")}</label>
                                 <input
                                     id="template-name"
                                     type="text"
                                     value={templateName}
                                     onChange={(e) => setTemplateName(e.target.value)}
-                                    placeholder="Template name"
+                                    placeholder={t("templateDetail.templateNamePlaceholder")}
                                     maxLength={100}
                                     autoFocus
                                 />
@@ -351,14 +353,14 @@ export default function TemplateDetail() {
                         </div>
                         <div className="modal-actions">
                             <button className="cancel-btn" onClick={() => setShowEditNameModal(false)}>
-                                Cancel
+                                {t("common.cancel")}
                             </button>
                             <button
                                 className="submit-btn"
                                 onClick={handleUpdateName}
                                 disabled={!templateName.trim() || isSubmitting}
                             >
-                                {isSubmitting ? "Saving..." : "Save"}
+                                {isSubmitting ? t("common.saving") : t("common.save")}
                             </button>
                         </div>
                     </div>
@@ -381,61 +383,61 @@ export default function TemplateDetail() {
                             }
                         }}
                     >
-                        <h2>Edit Item</h2>
+                        <h2>{t("templateDetail.editItem")}</h2>
                         <div className="modal-form">
                             <div className="form-group">
-                                <label htmlFor="item-name">Name</label>
+                                <label htmlFor="item-name">{t("common.name")}</label>
                                 <input
                                     id="item-name"
                                     type="text"
                                     value={itemName}
                                     onChange={(e) => setItemName(e.target.value)}
-                                    placeholder="Item name"
+                                    placeholder={t("templateDetail.itemNamePlaceholder")}
                                     maxLength={200}
                                     autoFocus
                                 />
                             </div>
                             <div className="form-group">
-                                <label htmlFor="item-description">Description (optional)</label>
+                                <label htmlFor="item-description">{t("templateDetail.descriptionLabel")}</label>
                                 <input
                                     id="item-description"
                                     type="text"
                                     value={itemDescription}
                                     onChange={(e) => setItemDescription(e.target.value)}
-                                    placeholder="Description"
+                                    placeholder={t("templateDetail.descriptionPlaceholder")}
                                 />
                             </div>
                             <div className="form-group">
-                                <label htmlFor="item-quantity">Quantity (optional)</label>
+                                <label htmlFor="item-quantity">{t("templateDetail.quantityLabel")}</label>
                                 <input
                                     id="item-quantity"
                                     type="text"
                                     value={itemQuantity}
                                     onChange={(e) => setItemQuantity(e.target.value)}
-                                    placeholder="e.g., 2 lbs, 3 items"
+                                    placeholder={t("templateDetail.quantityPlaceholder")}
                                 />
                             </div>
                             <div className="form-group">
-                                <label htmlFor="item-section">Section (optional)</label>
+                                <label htmlFor="item-section">{t("templateDetail.sectionLabel")}</label>
                                 <input
                                     id="item-section"
                                     type="text"
                                     value={itemSectionName}
                                     onChange={(e) => setItemSectionName(e.target.value)}
-                                    placeholder="e.g., Dairy, Produce"
+                                    placeholder={t("templateDetail.sectionPlaceholder")}
                                 />
                             </div>
                         </div>
                         <div className="modal-actions">
                             <button className="cancel-btn" onClick={() => setShowEditItemModal(false)}>
-                                Cancel
+                                {t("common.cancel")}
                             </button>
                             <button
                                 className="submit-btn"
                                 onClick={handleEditItem}
                                 disabled={!itemName.trim() || isSubmitting}
                             >
-                                {isSubmitting ? "Saving..." : "Save"}
+                                {isSubmitting ? t("common.saving") : t("common.save")}
                             </button>
                         </div>
                     </div>
@@ -458,18 +460,18 @@ export default function TemplateDetail() {
                             }
                         }}
                     >
-                        <h2>Delete Item?</h2>
-                        <p>Are you sure you want to delete "{deletingItem.name}"?</p>
+                        <h2>{t("templateDetail.deleteItem")}</h2>
+                        <p>{t("templateDetail.deleteConfirm", { name: deletingItem.name })}</p>
                         <div className="modal-actions">
                             <button className="cancel-btn" onClick={() => setShowDeleteItemModal(false)}>
-                                Cancel
+                                {t("common.cancel")}
                             </button>
                             <button
                                 className="submit-btn danger-btn"
                                 onClick={handleDeleteItem}
                                 disabled={isSubmitting}
                             >
-                                {isSubmitting ? "Deleting..." : "Delete"}
+                                {isSubmitting ? t("common.deleting") : t("common.delete")}
                             </button>
                         </div>
                     </div>
