@@ -618,6 +618,107 @@ describe("Templates API", () => {
     });
 });
 
+describe("History API", () => {
+    let testListId: number;
+    let testSectionId: number;
+
+    test("setup: create list and section for history tests", async () => {
+        const listRes = await app.request("/api/v1/lists", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: "History Test List" }),
+        });
+        const listData = (await listRes.json()) as { data: { id: number } };
+        testListId = listData.data.id;
+
+        const sectionRes = await app.request(`/api/v1/lists/${testListId}/sections`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: "History Section" }),
+        });
+        const sectionData = (await sectionRes.json()) as { data: { id: number } };
+        testSectionId = sectionData.data.id;
+    });
+
+    test("GET /api/v1/history returns history entries", async () => {
+        await app.request(`/api/v1/sections/${testSectionId}/items`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: "History Apple", description: "red", quantity: "3" }),
+        });
+        await app.request(`/api/v1/sections/${testSectionId}/items`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: "History Banana" }),
+        });
+
+        const res = await app.request("/api/v1/history");
+        expect(res.status).toBe(200);
+
+        const data = (await res.json()) as {
+            success: boolean;
+            data: Array<{ id: number; name: string }>;
+        };
+        expect(data.success).toBe(true);
+        expect(data.data.some((h) => h.name === "History Apple")).toBe(true);
+        expect(data.data.some((h) => h.name === "History Banana")).toBe(true);
+    });
+
+    test("GET /api/v1/history supports limit param", async () => {
+        const res = await app.request("/api/v1/history?limit=1");
+        expect(res.status).toBe(200);
+
+        const data = (await res.json()) as { data: Array<{ name: string }> };
+        expect(data.data.length).toBeLessThanOrEqual(1);
+    });
+
+    test("GET /api/v1/history supports q search param", async () => {
+        const res = await app.request("/api/v1/history?q=History+Apple");
+        expect(res.status).toBe(200);
+
+        const data = (await res.json()) as {
+            success: boolean;
+            data: Array<{ name: string }>;
+        };
+        expect(data.success).toBe(true);
+        expect(data.data.some((h) => h.name === "History Apple")).toBe(true);
+    });
+
+    test("DELETE /api/v1/history/:id deletes a history entry", async () => {
+        const historyRes = await app.request("/api/v1/history");
+        const historyData = (await historyRes.json()) as {
+            data: Array<{ id: number; name: string }>;
+        };
+        const entry = historyData.data.find((h) => h.name === "History Banana");
+        expect(entry).toBeDefined();
+
+        const deleteRes = await app.request(`/api/v1/history/${entry!.id}`, {
+            method: "DELETE",
+        });
+        expect(deleteRes.status).toBe(200);
+
+        const verifyRes = await app.request("/api/v1/history");
+        const verifyData = (await verifyRes.json()) as {
+            data: Array<{ name: string }>;
+        };
+        expect(verifyData.data.some((h) => h.name === "History Banana")).toBe(false);
+    });
+
+    test("DELETE /api/v1/history/:id returns 404 for non-existent entry", async () => {
+        const res = await app.request("/api/v1/history/99999", {
+            method: "DELETE",
+        });
+        expect(res.status).toBe(404);
+    });
+
+    test("DELETE /api/v1/history/:id returns 400 for invalid ID", async () => {
+        const res = await app.request("/api/v1/history/abc", {
+            method: "DELETE",
+        });
+        expect(res.status).toBe(400);
+    });
+});
+
 describe("Import/Export API", () => {
     describe("GET /api/v1/export/summary", () => {
         test("returns export summary with correct structure", async () => {

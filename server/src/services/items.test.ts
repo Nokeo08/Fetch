@@ -201,5 +201,23 @@ describe("ItemsService", () => {
             const results = itemsService.searchHistory("Item", 3);
             expect(results.length).toBe(3);
         });
+
+        test("should delete a history entry by ID", () => {
+            itemsService.create(testSectionId, "Deletable Entry");
+            const history = itemsService.getHistory(100);
+            const entry = history.find((h) => h.name === "Deletable Entry");
+            expect(entry).toBeDefined();
+
+            const deleted = itemsService.deleteHistoryEntry(entry!.id);
+            expect(deleted).toBe(true);
+
+            const historyAfter = itemsService.getHistory(100);
+            expect(historyAfter.some((h) => h.name === "Deletable Entry")).toBe(false);
+        });
+
+        test("should return false when deleting non-existent history entry", () => {
+            const deleted = itemsService.deleteHistoryEntry(99999);
+            expect(deleted).toBe(false);
+        });
     });
 });

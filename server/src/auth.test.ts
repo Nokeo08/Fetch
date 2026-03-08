@@ -56,7 +56,7 @@ describe("requireAuth middleware", () => {
         const res = await app.request("/protected");
         expect(res.status).toBe(401);
         const body = await res.json();
-        expect(body).toEqual({ success: false, error: "Authentication required" });
+        expect(body).toEqual({ success: false, error: "Authentication required", code: "UNAUTHORIZED" });
     });
 
     it("returns 401 for invalid session token", async () => {
@@ -70,7 +70,7 @@ describe("requireAuth middleware", () => {
         });
         expect(res.status).toBe(401);
         const body = await res.json();
-        expect(body).toEqual({ success: false, error: "Invalid session" });
+        expect(body).toEqual({ success: false, error: "Invalid session", code: "UNAUTHORIZED" });
     });
 
     it("allows request with valid session", async () => {
@@ -102,7 +102,7 @@ describe("requireAuth middleware", () => {
         });
         expect(res.status).toBe(401);
         const body = await res.json();
-        expect(body).toEqual({ success: false, error: "Session expired" });
+        expect(body).toEqual({ success: false, error: "Session expired", code: "UNAUTHORIZED" });
     });
 
     it("allows all requests when auth is disabled", async () => {
@@ -114,6 +114,118 @@ describe("requireAuth middleware", () => {
             .get("/protected", (c) => c.json({ success: true }));
 
         const res = await app.request("/protected");
+        expect(res.status).toBe(200);
+    });
+});
+
+describe("Bearer token authentication", () => {
+    const configWithToken: Config = {
+        port: 3000,
+        auth: { password: "test-password", disabled: false },
+        api: { token: "test-api-token-12345" },
+        database: { path: ":memory:" },
+        session: { secret: "test-secret", maxAge: 7 * 24 * 60 * 60 * 1000 },
+        rateLimit: { maxAttempts: 5, windowMs: 15 * 60 * 1000, lockoutMs: 30 * 60 * 1000 },
+    };
+
+    it("allows request with valid Bearer token", async () => {
+        const sessionsService = createSessionsService(db);
+        const app = new Hono()
+            .use("*", requireAuth(sessionsService, configWithToken))
+            .get("/protected", (c) => c.json({ success: true }));
+
+        const res = await app.request("/protected", {
+            headers: { Authorization: "Bearer test-api-token-12345" },
+        });
+        expect(res.status).toBe(200);
+        const body = await res.json();
+        expect(body).toEqual({ success: true });
+    });
+
+    it("returns 401 for invalid Bearer token", async () => {
+        const sessionsService = createSessionsService(db);
+        const app = new Hono()
+            .use("*", requireAuth(sessionsService, configWithToken))
+            .get("/protected", (c) => c.json({ success: true }));
+
+        const res = await app.request("/protected", {
+            headers: { Authorization: "Bearer wrong-token" },
+        });
+        expect(res.status).toBe(401);
+        const body = await res.json();
+        expect(body).toEqual({ success: false, error: "Invalid API token", code: "UNAUTHORIZED" });
+    });
+
+    it("falls back to session auth when no Bearer token and API_TOKEN is set", async () => {
+        const sessionsService = createSessionsService(db);
+        const session = sessionsService.create(configWithToken.session.maxAge);
+        const app = new Hono()
+            .use("*", requireAuth(sessionsService, configWithToken))
+            .get("/protected", (c) => c.json({ success: true }));
+
+        const res = await app.request("/protected", {
+            headers: { Cookie: `session=${session.token}` },
+        });
+        expect(res.status).toBe(200);
+        const body = await res.json();
+        expect(body).toEqual({ success: true });
+    });
+
+    it("returns 401 when no auth provided and API_TOKEN is set", async () => {
+        const sessionsService = createSessionsService(db);
+        const app = new Hono()
+            .use("*", requireAuth(sessionsService, configWithToken))
+            .get("/protected", (c) => c.json({ success: true }));
+
+        const res = await app.request("/protected");
+        expect(res.status).toBe(401);
+    });
+
+    it("falls back to session auth when API_TOKEN is not configured", async () => {
+        const configNoToken: Config = {
+            ...configWithToken,
+            api: {},
+        };
+        const sessionsService = createSessionsService(db);
+        const app = new Hono()
+            .use("*", requireAuth(sessionsService, configNoToken))
+            .get("/protected", (c) => c.json({ success: true }));
+
+        const res = await app.request("/protected", {
+            headers: { Authorization: "Bearer some-token" },
+        });
+        expect(res.status).toBe(401);
+        const body = await res.json();
+        expect(body.error).toBe("Authentication required");
+    });
+
+    it("supports both auth methods simultaneously", async () => {
+        const sessionsService = createSessionsService(db);
+        const session = sessionsService.create(configWithToken.session.maxAge);
+        const app = new Hono()
+            .use("*", requireAuth(sessionsService, configWithToken))
+            .get("/protected", (c) => c.json({ success: true }));
+
+        const bearerRes = await app.request("/protected", {
+            headers: { Authorization: "Bearer test-api-token-12345" },
+        });
+        expect(bearerRes.status).toBe(200);
+
+        const sessionRes = await app.request("/protected", {
+            headers: { Cookie: `session=${session.token}` },
+        });
+        expect(sessionRes.status).toBe(200);
+    });
+
+    it("Bearer token is case-insensitive for the scheme", async () => {
+        const sessionsService = createSessionsService(db);
+        const app = new Hono()
+            .use("*", requireAuth(sessionsService, configWithToken))
+            .get("/protected", (c) => c.json({ success: true }));
+
+        const res = await app.request("/protected", {
+            headers: { Authorization: "bearer test-api-token-12345" },
+        });
         expect(res.status).toBe(200);
     });
 });

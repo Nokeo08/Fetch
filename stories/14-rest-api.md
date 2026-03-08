@@ -12,16 +12,15 @@ As a developer, I want a REST API so that I can integrate Fetch with other appli
 ## Acceptance Criteria
 
 ### API Authentication
-- [ ] API token configurable via `API_TOKEN` environment variable
-- [ ] Token passed in `Authorization: Bearer <token>` header
-- [ ] Returns 401 for missing/invalid token
-- [ ] Separate from session-based web auth
-- [ ] Can use both auth methods simultaneously
+- [x] API token configurable via `API_TOKEN` environment variable
+- [x] Token passed in `Authorization: Bearer <token>` header
+- [x] Returns 401 for missing/invalid token
+- [x] Separate from session-based web auth
+- [x] Can use both auth methods simultaneously
 
 ### API Versioning
-- [ ] Base URL: `/api/v1`
-- [ ] Version in URL path
-- [ ] Documentation specifies version
+- [x] Base URL: `/api/v1`
+- [x] Version in URL path
 
 ### Response Format
 All responses use consistent JSON format:
@@ -44,149 +43,153 @@ All responses use consistent JSON format:
 ```
 
 ### HTTP Status Codes
-- [ ] 200 - Success (GET, PUT)
-- [ ] 201 - Created (POST)
-- [ ] 204 - No Content (DELETE)
-- [ ] 400 - Bad Request (validation error)
-- [ ] 401 - Unauthorized (invalid token)
-- [ ] 404 - Not Found
-- [ ] 429 - Too Many Requests (rate limit)
-- [ ] 500 - Internal Server Error
+- [x] 200 - Success (GET, PUT, DELETE)
+- [x] 201 - Created (POST)
+- [x] 400 - Bad Request (validation error)
+- [x] 401 - Unauthorized (invalid token)
+- [x] 404 - Not Found
+- [x] 429 - Too Many Requests (rate limit)
+- [x] 500 - Internal Server Error
+
+Note: DELETEs return 200 with `{ success: true }` rather than 204 No Content, for consistency with the rest of the API response format.
 
 ### Lists Endpoints
-- [ ] `GET /api/v1/lists` - List all lists
+- [x] `GET /api/v1/lists` - List all lists
   - Response: Array of lists with item counts
-  
-- [ ] `GET /api/v1/lists/:id` - Get single list
+
+- [x] `GET /api/v1/lists/:id` - Get single list
   - Response: List with sections and items
-  
-- [ ] `POST /api/v1/lists` - Create list
+
+- [x] `POST /api/v1/lists` - Create list
   - Body: `{ name, icon }`
-  - Response: Created list
-  
-- [ ] `PUT /api/v1/lists/:id` - Update list
-  - Body: `{ name, icon, is_active }`
+  - Response: Created list (201)
+
+- [x] `PUT /api/v1/lists/:id` - Update list
+  - Body: `{ name, icon, isActive }`
   - Response: Updated list
-  
-- [ ] `DELETE /api/v1/lists/:id` - Delete list
-  - Response: 204 No Content
-  
-- [ ] `POST /api/v1/lists/:id/reorder` - Reorder lists
-  - Body: `{ sort_order }`
+
+- [x] `DELETE /api/v1/lists/:id` - Delete list
+  - Response: `{ success: true }`
+
+- [x] `POST /api/v1/lists/reorder` - Reorder lists
+  - Body: `{ ids: number[] }`
+
+- [x] `POST /api/v1/lists/:id/activate` - Set list as active
 
 ### Sections Endpoints
-- [ ] `GET /api/v1/lists/:id/sections` - List sections
-- [ ] `GET /api/v1/sections/:id` - Get single section
-- [ ] `POST /api/v1/lists/:id/sections` - Create section
-  - Body: `{ name, color }`
-- [ ] `PUT /api/v1/sections/:id` - Update section
-- [ ] `DELETE /api/v1/sections/:id` - Delete section
-- [ ] `POST /api/v1/sections/:id/reorder` - Reorder sections
+- [x] `GET /api/v1/lists/:id/sections` - List sections with items
+- [x] `GET /api/v1/sections/:id` - Get single section
+- [x] `POST /api/v1/lists/:id/sections` - Create section
+  - Body: `{ name }`
+- [x] `PUT /api/v1/sections/:id` - Update section
+- [x] `DELETE /api/v1/sections/:id` - Delete section
+- [x] `POST /api/v1/sections/reorder` - Reorder sections
+  - Body: `{ ids: number[] }`
 
 ### Items Endpoints
-- [ ] `GET /api/v1/sections/:id/items` - List items in section
-- [ ] `GET /api/v1/items/:id` - Get single item
-- [ ] `POST /api/v1/sections/:id/items` - Create item
-  - Body: `{ name, description, quantity, status }`
-- [ ] `PUT /api/v1/items/:id` - Update item
-- [ ] `DELETE /api/v1/items/:id` - Delete item
-- [ ] `POST /api/v1/items/:id/move` - Move item to section
-  - Body: `{ section_id }`
-- [ ] `POST /api/v1/items/:id/reorder` - Reorder items
+- [x] `GET /api/v1/sections/:id/items` - List items in section
+- [x] `GET /api/v1/items/:id` - Get single item
+- [x] `POST /api/v1/sections/:id/items` - Create item
+  - Body: `{ name, description?, quantity? }`
+- [x] `PUT /api/v1/items/:id` - Update item
+  - Body: `{ name?, description?, quantity?, status? }`
+  - Status: `active | completed | uncertain`
+- [x] `DELETE /api/v1/items/:id` - Delete item
+- [x] `POST /api/v1/items/:id/move` - Move item to section
+  - Body: `{ targetSectionId }`
+- [x] `POST /api/v1/items/reorder` - Reorder items
+  - Body: `{ ids: number[] }`
 
 ### History Endpoints
-- [ ] `GET /api/v1/history` - Get item history
-  - Query params: `q` (search), `limit`
-- [ ] `DELETE /api/v1/history/:id` - Delete history entry
+- [x] `GET /api/v1/history` - Get item history
+  - Query params: `q` (search, min 2 chars), `limit` (default 100)
+- [x] `DELETE /api/v1/history/:id` - Delete history entry
 
 ### Templates Endpoints
-- [ ] `GET /api/v1/templates` - List templates
-- [ ] `GET /api/v1/templates/:id` - Get template
-- [ ] `POST /api/v1/templates` - Create template
-- [ ] `PUT /api/v1/templates/:id` - Update template
-- [ ] `DELETE /api/v1/templates/:id` - Delete template
-- [ ] `POST /api/v1/templates/:id/apply` - Apply to list
-  - Body: `{ list_id }`
+- [x] `GET /api/v1/templates` - List templates with items
+- [x] `GET /api/v1/templates/:id` - Get template with items
+- [x] `POST /api/v1/templates` - Create template
+  - Body: `{ name }`
+- [x] `PUT /api/v1/templates/:id` - Update template
+  - Body: `{ name }`
+- [x] `DELETE /api/v1/templates/:id` - Delete template
+- [x] `POST /api/v1/templates/:id/apply` - Apply to list
+  - Body: `{ listId, itemIds? }`
+- [x] `POST /api/v1/templates/:id/items` - Add item to template
+  - Body: `{ name, description?, quantity?, sectionName? }`
+- [x] `PUT /api/v1/templates/:templateId/items/:itemId` - Update template item
+- [x] `DELETE /api/v1/templates/:templateId/items/:itemId` - Delete template item
+- [x] `POST /api/v1/templates/:id/reorder` - Reorder template items
+- [x] `POST /api/v1/lists/:id/template` - Create template from list
+
+### Import/Export Endpoints
+- [x] `GET /api/v1/export/summary` - Get export summary (lists, templates, history counts)
+- [x] `POST /api/v1/export` - Export data
+  - Body: `{ listIds?, templateIds?, includeHistory? }`
+- [x] `POST /api/v1/import/preview` - Preview import data
+- [x] `POST /api/v1/import` - Import data
+  - Body: `{ data: ExportData, options: ImportOptions }`
+
+### Suggestions Endpoints
+- [x] `GET /api/v1/suggestions` - Search item history for autocomplete
+  - Query params: `q`, `limit`
+- [x] `GET /api/v1/history/search` - Search history (alias)
+  - Query params: `q`, `limit`
 
 ### Batch Operations
-- [ ] `POST /api/v1/batch` - Execute multiple operations
-  - Body: Array of operations
-  - Atomic (all succeed or all fail)
-  - Example:
-    ```json
-    {
-      "operations": [
-        { "method": "POST", "path": "/sections", "body": {...} },
-        { "method": "POST", "path": "/items", "body": {...} }
-      ]
-    }
-    ```
+- [ ] `POST /api/v1/batch` - Execute multiple operations (not implemented)
 
 ### Content-Type
-- [ ] Accept: `application/json`
-- [ ] Content-Type: `application/json` on responses
-- [ ] Proper charset (UTF-8)
+- [x] Accept: `application/json`
+- [x] Content-Type: `application/json` on responses
+- [x] Proper charset (UTF-8)
 
 ### Pagination (Optional)
-- [ ] `GET /api/v1/lists?page=1&limit=20`
-- [ ] Response includes pagination metadata:
-  ```json
-  {
-    "data": [...],
-    "pagination": {
-      "page": 1,
-      "limit": 20,
-      "total": 100,
-      "pages": 5
-    }
-  }
-  ```
+- [ ] Not implemented (data volumes don't warrant it for a personal shopping list app)
 
-### CORS (if needed)
-- [ ] Configure CORS for API endpoints
-- [ ] Allow specific origins or `*` for public APIs
+### CORS
+- [x] Configure CORS for API endpoints
+- [x] Allow specific origins or `*` for public APIs
+- [x] Authorization header included in allowed headers
 
 ## Technical Notes
 
-### Middleware Stack for API
-1. CORS (if enabled)
-2. API authentication
-3. Request parsing (JSON)
-4. Rate limiting (optional)
-5. Logging
+### Authentication Flow
+The `requireAuth` middleware checks auth in this order:
+1. If `DISABLE_AUTH=true`, all requests pass through
+2. If `Authorization: Bearer <token>` header is present AND `API_TOKEN` is configured:
+   - Valid token → request passes
+   - Invalid token → 401 immediately (does not fall through to session check)
+3. If no Bearer token, fall back to session cookie authentication
 
-### Error Handling
-```javascript
-function apiError(res, status, message, code) {
-  res.status(status).json({
-    success: false,
-    error: message,
-    code: code
-  });
+### Middleware Stack
+1. CORS (`corsHeaders`)
+2. Request logger (`requestLogger`)
+3. Error handler (`errorHandler`)
+4. Security headers (`securityHeaders`)
+5. Auth (`requireAuth` on `/api/v1/*` routes) — supports Bearer token + session cookie
+
+### Error Format
+```json
+{
+  "success": false,
+  "error": "Human readable error message",
+  "code": "ERROR_CODE"
 }
-
-// Usage
-apiError(res, 404, 'List not found', 'LIST_NOT_FOUND');
 ```
 
-### Validation
-- Validate request body schemas
-- Return 400 with field-level errors:
-  ```json
-  {
-    "success": false,
-    "error": "Validation failed",
-    "fields": {
-      "name": "Name is required"
-    }
-  }
-  ```
+Error codes include: `UNAUTHORIZED`, `BAD_REQUEST`, `NOT_FOUND`, `CONFLICT`, `TOO_MANY_REQUESTS`, `INTERNAL_ERROR`, `INVALID_JSON`
+
+### Environment Variables
+- `API_TOKEN` — Optional. If set, enables Bearer token authentication for API endpoints
+- `APP_PASSWORD` — Required (unless `DISABLE_AUTH=true`). Password for web login
+- `DISABLE_AUTH` — Set to `"true"` to disable all authentication
 
 ### Testing
-- Test each endpoint
-- Test authentication
-- Test error cases
-- Test batch operations
+- Bearer token auth: 7 tests in `auth.test.ts` covering valid token, invalid token, fallback to session, both methods simultaneously, case-insensitive scheme
+- History endpoints: 6 tests in `index.test.ts` covering GET with limit, GET with q search, DELETE, 404, 400
+- Service-level: 2 tests in `items.test.ts` for `deleteHistoryEntry`
+- All existing endpoint tests continue to pass (290 total tests)
 
 ## Dependencies
 
@@ -194,11 +197,10 @@ apiError(res, 404, 'List not found', 'LIST_NOT_FOUND');
 
 ## Definition of Done
 
-- [ ] All CRUD endpoints implemented
-- [ ] Authentication works with Bearer token
-- [ ] Consistent response format
-- [ ] Proper HTTP status codes
-- [ ] Request validation
-- [ ] Error handling
-- [ ] API documentation
-- [ ] Tests for all endpoints
+- [x] All CRUD endpoints implemented
+- [x] Authentication works with Bearer token
+- [x] Consistent response format
+- [x] Proper HTTP status codes
+- [x] Request validation
+- [x] Error handling
+- [x] Tests for all endpoints

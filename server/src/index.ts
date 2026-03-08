@@ -468,9 +468,26 @@ function createApiRoutes(
         })
 
         .get("/history", (c) => {
+            const query = c.req.query("q") || "";
             const limit = parseInt(c.req.query("limit") || "100", 10);
+            if (query.length >= 2) {
+                const results = itemsService.searchHistory(query, limit);
+                return c.json<ApiResponse>({ success: true, data: results });
+            }
             const history = itemsService.getHistory(limit);
             return c.json<ApiResponse>({ success: true, data: history });
+        })
+
+        .delete("/history/:id", (c) => {
+            const id = parseId(c.req.param("id"));
+            if (id === null) {
+                return c.json<ApiResponse>({ success: false, error: "Invalid history ID" }, 400);
+            }
+            const deleted = itemsService.deleteHistoryEntry(id);
+            if (!deleted) {
+                return c.json<ApiResponse>({ success: false, error: "History entry not found" }, 404);
+            }
+            return c.json<ApiResponse>({ success: true });
         })
 
         .get("/suggestions", (c) => {

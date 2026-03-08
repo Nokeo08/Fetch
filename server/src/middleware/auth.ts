@@ -10,6 +10,12 @@ export type AuthVariables = {
     };
 };
 
+function extractBearerToken(header: string | undefined): string | null {
+    if (!header) return null;
+    const match = header.match(/^Bearer\s+(\S+)$/i);
+    return match?.[1] ?? null;
+}
+
 export function requireAuth(
     sessionsService: SessionsService,
     config: Config
@@ -19,11 +25,22 @@ export function requireAuth(
             return next();
         }
 
+        const bearerToken = extractBearerToken(c.req.header("authorization"));
+        if (bearerToken && config.api.token) {
+            if (constantTimeEquals(bearerToken, config.api.token)) {
+                return next();
+            }
+            return c.json<{ success: false; error: string; code: string }>(
+                { success: false, error: "Invalid API token", code: "UNAUTHORIZED" },
+                401
+            );
+        }
+
         const sessionToken = getCookie(c, "session");
 
         if (!sessionToken) {
-            return c.json<{ success: false; error: string }>(
-                { success: false, error: "Authentication required" },
+            return c.json<{ success: false; error: string; code: string }>(
+                { success: false, error: "Authentication required", code: "UNAUTHORIZED" },
                 401
             );
         }
@@ -31,8 +48,8 @@ export function requireAuth(
         const session = sessionsService.getByToken(sessionToken);
 
         if (!session) {
-            return c.json<{ success: false; error: string }>(
-                { success: false, error: "Invalid session" },
+            return c.json<{ success: false; error: string; code: string }>(
+                { success: false, error: "Invalid session", code: "UNAUTHORIZED" },
                 401
             );
         }
@@ -40,8 +57,8 @@ export function requireAuth(
         const expiresAt = new Date(session.expiresAt);
         if (expiresAt <= new Date()) {
             sessionsService.delete(sessionToken);
-            return c.json<{ success: false; error: string }>(
-                { success: false, error: "Session expired" },
+            return c.json<{ success: false; error: string; code: string }>(
+                { success: false, error: "Session expired", code: "UNAUTHORIZED" },
                 401
             );
         }

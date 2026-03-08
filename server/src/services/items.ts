@@ -172,6 +172,11 @@ export function createItemsService(db: Database) {
             return rows.map(mapHistoryEntry);
         },
 
+        deleteHistoryEntry(id: number): boolean {
+            const result = db.query("DELETE FROM history WHERE id = ?").run(id);
+            return result.changes > 0;
+        },
+
         searchHistory(query: string, limit: number = 5): HistoryEntry[] {
             if (!query || query.length < 2) return [];
 
