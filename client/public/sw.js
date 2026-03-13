@@ -1,7 +1,19 @@
-const CACHE_NAME = "fetch-v1";
+const CACHE_NAME = "fetch-v2";
 const STATIC_ASSETS = [
     "/",
     "/index.html",
+    "/manifest.json",
+    "/favicon.ico",
+    "/icons/icon-48.png",
+    "/icons/icon-72.png",
+    "/icons/icon-96.png",
+    "/icons/icon-128.png",
+    "/icons/icon-144.png",
+    "/icons/icon-152.png",
+    "/icons/icon-180.png",
+    "/icons/icon-192.png",
+    "/icons/icon-384.png",
+    "/icons/icon-512.png",
 ];
 
 self.addEventListener("install", (event) => {
@@ -65,6 +77,11 @@ self.addEventListener("fetch", (event) => {
                     });
                 }
                 return networkResponse;
+            }).catch(() => {
+                if (event.request.mode === "navigate") {
+                    return caches.match("/index.html");
+                }
+                return new Response("Offline", { status: 503 });
             });
         }),
     );
@@ -82,3 +99,9 @@ async function syncData() {
         client.postMessage({ type: "SYNC_TRIGGERED" });
     });
 }
+
+self.addEventListener("message", (event) => {
+    if (event.data && event.data.type === "SKIP_WAITING") {
+        self.skipWaiting();
+    }
+});

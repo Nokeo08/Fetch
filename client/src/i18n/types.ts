@@ -267,6 +267,13 @@ export type Translations = {
         syncingBtn: string;
         lastSynced: string;
     };
+    pwa: {
+        installTitle: string;
+        installDescription: string;
+        installButton: string;
+        dismissButton: string;
+        iosInstructions: string;
+    };
 };
 
 export type SupportedLanguage = "en" | "pl" | "de" | "es" | "fr" | "pt" | "uk" | "no" | "lt" | "el" | "sk" | "ru" | "sv";

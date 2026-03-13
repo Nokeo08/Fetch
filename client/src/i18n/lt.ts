@@ -269,6 +269,13 @@ const lt: Translations = {
         syncingBtn: "Sinchronizuojama...",
         lastSynced: "Paskutinė sinchronizacija:",
     },
+    pwa: {
+        installTitle: "Įdiegti Fetch",
+        installDescription: "Pridėkite Fetch prie pradžios ekrano greitai prieigai ir naudojimui neprisijungus.",
+        installButton: "Įdiegti",
+        dismissButton: "Ne dabar",
+        iosInstructions: "Norėdami įdiegti: bakstelėkite bendrinimo mygtuką, tada \"Pridėti prie pradžios ekrano\".",
+    },
 };
 
 export default lt;

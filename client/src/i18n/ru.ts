@@ -269,6 +269,13 @@ const ru: Translations = {
         syncingBtn: "Синхронизация...",
         lastSynced: "Последняя синхронизация:",
     },
+    pwa: {
+        installTitle: "Установить Fetch",
+        installDescription: "Добавьте Fetch на главный экран для быстрого доступа и работы без сети.",
+        installButton: "Установить",
+        dismissButton: "Не сейчас",
+        iosInstructions: "Для установки: нажмите кнопку «Поделиться», затем «На экран Домой».",
+    },
 };
 
 export default ru;

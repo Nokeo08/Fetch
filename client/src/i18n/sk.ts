@@ -269,6 +269,13 @@ const sk: Translations = {
         syncingBtn: "Synchronizuje sa...",
         lastSynced: "Naposledy synchronizované:",
     },
+    pwa: {
+        installTitle: "Nainštalovať Fetch",
+        installDescription: "Pridajte Fetch na domovskú obrazovku pre rýchly prístup a offline použitie.",
+        installButton: "Nainštalovať",
+        dismissButton: "Teraz nie",
+        iosInstructions: "Pre inštaláciu: ťuknite na tlačidlo zdieľania a potom na \"Pridať na plochu\".",
+    },
 };
 
 export default sk;

@@ -269,6 +269,13 @@ const pl: Translations = {
         syncingBtn: "Synchronizacja...",
         lastSynced: "Ostatnia synchronizacja:",
     },
+    pwa: {
+        installTitle: "Zainstaluj Fetch",
+        installDescription: "Dodaj Fetch do ekranu głównego, aby mieć szybki dostęp i możliwość pracy offline.",
+        installButton: "Zainstaluj",
+        dismissButton: "Nie teraz",
+        iosInstructions: "Aby zainstalować: dotknij przycisku udostępniania, a następnie \"Dodaj do ekranu początkowego\".",
+    },
 };
 
 export default pl;

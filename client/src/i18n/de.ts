@@ -269,6 +269,13 @@ const de: Translations = {
         syncingBtn: "Synchronisieren...",
         lastSynced: "Zuletzt synchronisiert:",
     },
+    pwa: {
+        installTitle: "Fetch installieren",
+        installDescription: "Füge Fetch zu deinem Startbildschirm hinzu für schnellen Zugriff und Offline-Nutzung.",
+        installButton: "Installieren",
+        dismissButton: "Nicht jetzt",
+        iosInstructions: "Zum Installieren: Tippe auf das Teilen-Symbol, dann auf \"Zum Home-Bildschirm\".",
+    },
 };
 
 export default de;

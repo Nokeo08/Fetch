@@ -269,6 +269,13 @@ const en: Translations = {
         syncingBtn: "Syncing...",
         lastSynced: "Last synced:",
     },
+    pwa: {
+        installTitle: "Install Fetch",
+        installDescription: "Add Fetch to your home screen for quick access and offline use.",
+        installButton: "Install",
+        dismissButton: "Not now",
+        iosInstructions: "To install: tap the share button, then \"Add to Home Screen\".",
+    },
 };
 
 export default en;

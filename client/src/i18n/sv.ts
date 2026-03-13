@@ -269,6 +269,13 @@ const sv: Translations = {
         syncingBtn: "Synkroniserar...",
         lastSynced: "Senast synkroniserad:",
     },
+    pwa: {
+        installTitle: "Installera Fetch",
+        installDescription: "Lägg till Fetch på startskärmen för snabb åtkomst och offlineanvändning.",
+        installButton: "Installera",
+        dismissButton: "Inte nu",
+        iosInstructions: "För att installera: tryck på delningsknappen och sedan \"Lägg till på hemskärmen\".",
+    },
 };
 
 export default sv;

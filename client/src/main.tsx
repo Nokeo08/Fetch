@@ -13,6 +13,7 @@ import { AuthProvider, useAuth } from "./AuthContext.tsx";
 import { WebSocketProvider } from "./WebSocketContext.tsx";
 import { OfflineProvider } from "./OfflineContext.tsx";
 import { I18nProvider, useTranslation } from "./i18n/index.ts";
+import InstallBanner from "./InstallBanner.tsx";
 
 const queryClient = new QueryClient();
 
@@ -117,6 +118,7 @@ function Main() {
                             <OfflineProvider>
                                 <WebSocketProvider>
                                     <AppRoutes />
+                                    <InstallBanner />
                                 </WebSocketProvider>
                             </OfflineProvider>
                         </AuthProvider>

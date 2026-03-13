@@ -269,6 +269,13 @@ const el: Translations = {
         syncingBtn: "Συγχρονισμός...",
         lastSynced: "Τελευταίος συγχρονισμός:",
     },
+    pwa: {
+        installTitle: "Εγκατάσταση Fetch",
+        installDescription: "Προσθέστε το Fetch στην αρχική οθόνη για γρήγορη πρόσβαση και χρήση εκτός σύνδεσης.",
+        installButton: "Εγκατάσταση",
+        dismissButton: "Όχι τώρα",
+        iosInstructions: "Για εγκατάσταση: πατήστε το κουμπί κοινοποίησης και μετά \"Προσθήκη στην αρχική οθόνη\".",
+    },
 };
 
 export default el;

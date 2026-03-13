@@ -267,7 +267,14 @@ const es: Translations = {
         pendingChangeSingular: "{count} cambio pendiente esperando sincronizaci\u00F3n",
         syncNow: "Sincronizar ahora",
         syncingBtn: "Sincronizando...",
-        lastSynced: "\u00DAltima sincronizaci\u00F3n:",
+        lastSynced: "Última sincronización:",
+    },
+    pwa: {
+        installTitle: "Instalar Fetch",
+        installDescription: "Añade Fetch a tu pantalla de inicio para acceso rápido y uso sin conexión.",
+        installButton: "Instalar",
+        dismissButton: "Ahora no",
+        iosInstructions: "Para instalar: toca el botón de compartir y luego \"Añadir a pantalla de inicio\".",
     },
 };
 

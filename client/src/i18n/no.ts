@@ -269,6 +269,13 @@ const no: Translations = {
         syncingBtn: "Synkroniserer...",
         lastSynced: "Sist synkronisert:",
     },
+    pwa: {
+        installTitle: "Installer Fetch",
+        installDescription: "Legg til Fetch på startskjermen for rask tilgang og bruk uten nett.",
+        installButton: "Installer",
+        dismissButton: "Ikke nå",
+        iosInstructions: "For å installere: trykk på del-knappen, deretter \"Legg til på Hjem-skjerm\".",
+    },
 };
 
 export default no;
