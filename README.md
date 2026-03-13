@@ -1,208 +1,156 @@
 # Fetch
 
-A lightweight, self-hosted Progressive Web App (PWA) for managing shopping lists with real-time synchronization across devices. Built with Bun, Hono, Vite, and React.
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+
+> A lightweight, self-hosted shopping list app for couples and families
+
+Fetch is a Progressive Web App (PWA) for managing shopping lists with real-time synchronization across devices. Built with Bun, Hono, React, and SQLite.
 
 ## Features
 
-- **Simple Authentication**: Single password, no complex registration
-- **Privacy-Focused**: Self-hosted, your data stays with you
-- **Real-Time Sync**: Updates sync instantly across all devices
-- **Offline Support**: Works without internet, syncs when back online
-- **PWA**: Install on mobile devices like a native app
-- **Multi-Language**: Support for multiple languages
+- **Real-time sync** -- Updates appear instantly across all connected devices via WebSocket
+- **Progressive Web App** -- Install on any device like a native app
+- **Offline support** -- Works without internet, syncs automatically when reconnected
+- **Templates** -- Save and reuse common shopping list configurations
+- **Import/Export** -- Full data portability with JSON import and export
+- **Multi-language** -- 13 languages supported (EN, DE, ES, FR, PT, RU, and more)
+- **Simple auth** -- Single password, no registration required
+- **Self-hosted** -- Your data stays on your server
+- **API access** -- Full REST API with optional bearer token authentication
+
+## Screenshots
+
+> Screenshots can be added to the `client/public/screenshots/` directory and referenced here.
 
 ## Quick Start
 
-### Prerequisites
-
-- [Bun](https://bun.sh) >= 1.2.0
-
-### Installation
+### Docker (Recommended)
 
 ```bash
-# Clone the repository
-git clone <your-repo-url>
-cd fetch
-
-# Install dependencies
-bun install
-
-# Copy environment variables
-cp .env.example .env
-
-# Edit .env and set your APP_PASSWORD
-# (Required unless DISABLE_AUTH=true)
-```
-
-### Development
-
-```bash
-# Start all services
-bun run dev
-
-# Or run individually:
-bun run dev:client    # Frontend only
-bun run dev:server    # Backend only
-```
-
-### Production Build
-
-```bash
-bun run build
-```
-
-## Environment Variables
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `APP_PASSWORD` | Yes* | - | Password for authentication |
-| `DISABLE_AUTH` | No | false | Disable auth (for reverse proxy) |
-| `API_TOKEN` | No | - | Token for REST API access |
-| `PORT` | No | 3000 | HTTP server port |
-| `DATABASE_PATH` | No | ./data/fetch.db | Database file path |
-| `SESSION_SECRET` | No | random | Session encryption secret |
-
-*Required unless `DISABLE_AUTH=true`
-
-## Project Structure
-
-```
-fetch/
-├── client/                 # React + Vite frontend
-│   └── src/
-│       ├── App.tsx         # Main application
-│       └── main.tsx        # Entry point
-├── server/                 # Hono backend
-│   └── src/
-│       ├── config/         # Configuration management
-│       ├── db/             # Database layer
-│       │   ├── client.ts   # Database client
-│       │   ├── schema.ts   # Table definitions
-│       │   └── migrations.ts
-│       ├── services/       # Business logic
-│       │   ├── lists.ts
-│       │   ├── sections.ts
-│       │   └── items.ts
-│       └── index.ts        # API routes
-├── shared/                 # Shared types
-│   └── src/types/
-│       ├── entities.ts     # Domain types
-│       ├── api.ts          # API request/response types
-│       └── events.ts       # WebSocket events
-├── .env.example            # Environment template
-└── AGENTS.md               # AI agent guidelines
-```
-
-## API Endpoints
-
-### Health
-- `GET /health` - Health check endpoint
-
-### Lists
-- `GET /api/v1/lists` - Get all lists
-- `POST /api/v1/lists` - Create a list
-- `GET /api/v1/lists/:id` - Get single list
-- `PUT /api/v1/lists/:id` - Update list
-- `DELETE /api/v1/lists/:id` - Delete list
-
-### Sections
-- `GET /api/v1/lists/:id/sections` - Get sections
-- `POST /api/v1/lists/:id/sections` - Create section
-
-### Items
-- `GET /api/v1/sections/:id/items` - Get items
-- `POST /api/v1/sections/:id/items` - Create item
-
-## Deployment
-
-### Docker
-
-The application ships as a single container with both frontend and backend. The multi-stage build produces a minimal Alpine-based image.
-
-#### Quick Start with Docker Compose (Recommended)
-
-```bash
-# Copy environment template and set your password
-cp .env.example .env
-# Edit .env and set APP_PASSWORD
-
-# Start the application
-docker compose up -d
-
-# View logs
-docker compose logs -f
-
-# Stop
-docker compose down
-```
-
-#### Build and Run Manually
-
-```bash
-# Build the image
-docker build -t fetch .
-
-# Run the container
 docker run -d \
   --name fetch \
   -p 3000:3000 \
   -e APP_PASSWORD=your-secure-password \
   -v fetch-data:/data \
-  fetch
-
-# Check health
-curl http://localhost:3000/health
+  --restart unless-stopped \
+  fetch:latest
 ```
 
-#### Production Deployment
-
-For production, use the compose override file for resource limits and log rotation:
+Or with Docker Compose:
 
 ```bash
-docker compose -f compose.yaml -f compose.prod.yaml up -d
+cp .env.example .env
+# Edit .env and set APP_PASSWORD
+
+docker compose up -d
 ```
 
-#### Volume Mounting
-
-The application stores its SQLite database in the `/data` directory inside the container. This **must** be mounted as a volume to persist data across container restarts.
+To build from source:
 
 ```bash
-# Named volume (recommended)
-docker run -v fetch-data:/data ...
-
-# Bind mount to host directory
-docker run -v /path/on/host:/data ...
+docker build -t fetch .
 ```
 
-#### Environment Variables
+Open `http://localhost:3000` and log in with your password.
+
+The container runs as a non-root user, includes a health check at `/health`, and stores data in `/data` (must be mounted as a volume). See the [Docker Deployment Guide](docs/deployment/docker.md) for full details.
+
+### From Source
+
+```bash
+# Prerequisites: Bun >= 1.2.0
+
+git clone <your-repo-url>
+cd fetch
+bun install
+cp .env.example .env
+# Edit .env and set APP_PASSWORD
+
+bun run dev
+```
+
+See the [Getting Started Guide](docs/getting-started.md) for detailed instructions.
+
+## Configuration
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `APP_PASSWORD` | Yes* | - | Password for authentication |
-| `DISABLE_AUTH` | No | `false` | Set to `true` to disable auth |
-| `API_TOKEN` | No | - | Token for REST API access |
+| `DISABLE_AUTH` | No | `false` | Disable auth (for reverse proxy setups) |
+| `API_TOKEN` | No | - | Bearer token for REST API access |
 | `PORT` | No | `3000` | HTTP server port |
-| `DATABASE_PATH` | No | `/data/fetch.db` | SQLite database file path |
-| `SESSION_SECRET` | No | random | Session encryption secret |
-| `NODE_ENV` | No | `production` | Node environment |
+| `DATABASE_PATH` | No | `./data/fetch.db` | SQLite database file path |
+| `SESSION_SECRET` | No | random | Secret for session cookie encryption |
 
 \* Required unless `DISABLE_AUTH=true`
 
-#### Security Notes
+**Client-side variables** (set at build time):
 
-- The container runs as a non-root user (`fetch`, UID 1001)
-- No secrets are baked into the image; all config is via environment variables
-- Uses a specific base image tag (`oven/bun:1.3.9-alpine`), not `latest`
-- Health check endpoint at `/health` is configured with 30s interval, 3s timeout, 3 retries
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VITE_SERVER_URL` | `http://localhost:3000` | API base URL (empty string for relative URLs) |
+| `VITE_WS_URL` | auto-detected | WebSocket URL (empty string for auto-detection) |
 
-### Railway / Render / Fly.io
+See the [Environment Variables Reference](docs/deployment/docker.md#environment-variables) for full details.
 
-See [DEVELOPMENT_PLAN.md](./DEVELOPMENT_PLAN.md) for detailed deployment configurations.
+## Documentation
 
-## Development
+- **[Getting Started](docs/getting-started.md)** -- First-time setup and basic usage
+- **User Guide**
+  - [Managing Lists](docs/user-guide/managing-lists.md)
+  - [Items and Sections](docs/user-guide/items.md)
+  - [Templates](docs/user-guide/templates.md)
+  - [Offline Mode](docs/user-guide/offline-mode.md)
+- **Developer Guide**
+  - [Architecture](docs/developer-guide/architecture.md)
+  - [Development Setup](docs/developer-guide/development-setup.md)
+  - [Contributing](CONTRIBUTING.md)
+- **Deployment**
+  - [Docker](docs/deployment/docker.md)
+  - [Reverse Proxy](docs/deployment/reverse-proxy.md)
+  - [SSL/TLS](docs/deployment/ssl-tls.md)
+  - [Backup and Restore](docs/deployment/backup-restore.md)
+- **[API Reference](docs/api/README.md)**
+  - [OpenAPI Specification](docs/api/openapi.yaml)
+  - [Authentication](docs/api/authentication.md)
+- **[Troubleshooting](docs/troubleshooting.md)**
+- **[Changelog](CHANGELOG.md)**
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for development guidelines.
+## Project Structure
+
+```
+fetch/
+├── client/src/            # React + Vite frontend
+│   ├── api/               # API client modules
+│   ├── i18n/              # Internationalization (13 languages)
+│   ├── App.tsx            # Main application component
+│   ├── AuthContext.tsx     # Authentication state
+│   ├── WebSocketContext.tsx# Real-time sync
+│   ├── OfflineContext.tsx  # Offline detection
+│   └── offlineDb.ts       # IndexedDB for offline storage
+├── server/src/            # Hono backend
+│   ├── config/            # Configuration management
+│   ├── db/                # SQLite schema and migrations
+│   ├── middleware/         # Auth, CORS, security, logging, errors
+│   ├── services/          # Business logic (lists, sections, items, templates)
+│   ├── sync/              # WebSocket broadcast
+│   ├── websocket/         # Connection management
+│   └── index.ts           # Route definitions
+├── shared/src/types/      # Shared TypeScript type definitions
+│   ├── entities.ts        # Domain models
+│   ├── api.ts             # Request/response types
+│   └── events.ts          # WebSocket event types
+├── docs/                  # Documentation
+├── stories/               # Feature specifications
+├── Dockerfile             # Multi-stage production build
+├── compose.yaml           # Docker Compose configuration
+└── compose.prod.yaml      # Production resource limits
+```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines, code style, and the pull request process.
 
 ## License
 
-MIT
+This project is licensed under the GNU General Public License v3.0. See [LICENSE](LICENSE) for details.

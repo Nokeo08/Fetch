@@ -27,6 +27,7 @@ function formatDateForSqlite(date: Date): string {
     return date.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
 }
 
+/** Creates the sessions service for managing authentication sessions, including creation, validation, expiry, extension, and activity tracking. */
 export function createSessionsService(db: Database) {
     return {
         create(expiresInMs: number): Session {

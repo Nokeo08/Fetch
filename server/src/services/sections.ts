@@ -45,6 +45,7 @@ function mapItem(row: DbItem): Item {
     };
 }
 
+/** Creates the sections service for managing sections within lists, including CRUD, reordering, and retrieving sections with their items. */
 export function createSectionsService(db: Database) {
     return {
         getByListId(listId: number): Section[] {

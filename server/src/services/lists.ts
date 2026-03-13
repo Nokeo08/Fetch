@@ -34,6 +34,7 @@ function mapListWithCounts(row: DbListWithCounts): ListWithCounts {
     };
 }
 
+/** Creates the lists service for CRUD operations on shopping lists, including reordering and activation. */
 export function createListsService(db: Database) {
     return {
         getAll(): ListWithCounts[] {

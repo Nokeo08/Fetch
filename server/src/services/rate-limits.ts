@@ -29,6 +29,7 @@ function mapRateLimit(row: DbRateLimit): RateLimitEntry {
     };
 }
 
+/** Creates the rate limits service for tracking and enforcing login attempt limits per IP, including lockout management and cleanup. */
 export function createRateLimitsService(db: Database, config: RateLimitConfig) {
     return {
         getConfig(): RateLimitConfig {

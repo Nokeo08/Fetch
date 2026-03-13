@@ -1,54 +1,53 @@
-# React + TypeScript + Vite
+# Client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite frontend for Fetch.
 
-Currently, two official plugins are available:
+## Structure
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```
+src/
+├── api/                 # API client modules
+│   ├── lists.ts         # Lists API (CRUD, activate, reorder)
+│   ├── sections.ts      # Sections and Items API
+│   ├── templates.ts     # Templates API
+│   └── import-export.ts # Import/Export API
+├── i18n/                # Internationalization (13 languages)
+│   ├── I18nContext.tsx   # React context
+│   └── {lang}.ts        # Translation files
+├── App.tsx              # Main component with routing
+├── AuthContext.tsx       # Authentication state
+├── WebSocketContext.tsx  # Real-time sync via WebSocket
+├── OfflineContext.tsx    # Offline detection and state
+├── offlineDb.ts         # IndexedDB for offline storage
+├── operationQueue.ts    # Queued operations for offline sync
+├── Lists.tsx            # Lists page
+├── ListDetail.tsx       # Single list view with sections/items
+├── Templates.tsx        # Templates page
+├── TemplateDetail.tsx   # Single template view
+├── Settings.tsx         # Settings (import/export)
+├── Login.tsx            # Authentication page
+└── main.tsx             # Entry point
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Development
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+```bash
+bun run dev:client    # Start Vite dev server at http://localhost:5173
+bun run build         # Production build to dist/
 ```
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VITE_SERVER_URL` | `http://localhost:3000` | API base URL |
+| `VITE_WS_URL` | auto-detected | WebSocket URL |
+
+Set both to empty strings for production builds (uses relative URLs).
+
+## Key Patterns
+
+- **API layer**: Each module exports typed functions using `fetch()` with `credentials: "include"`
+- **Contexts**: `AuthContext`, `WebSocketContext`, `OfflineContext`, `I18nContext` provide global state
+- **Real-time**: WebSocket with auto-reconnect (exponential backoff, 1s-30s) and 25s heartbeat
+- **Offline**: Service worker caches shell, IndexedDB stores data, operation queue syncs on reconnect

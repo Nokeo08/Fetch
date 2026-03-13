@@ -1,0 +1,1500 @@
+openapi: 3.0.3
+info:
+  title: Fetch API
+  version: 1.0.0
+  description: |
+    REST API for the Fetch shopping list application.
+    All `/api/v1/*` endpoints require authentication via session cookie or bearer token.
+  license:
+    name: GPL-3.0-only
+    url: https://www.gnu.org/licenses/gpl-3.0.html
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags: [Public]
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, unhealthy]
+                  timestamp:
+                    type: string
+                    format: date-time
+                  database:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        enum: [connected, disconnected]
+                      latency:
+                        type: number
+        "503":
+          description: Unhealthy
+
+  /api/login:
+    post:
+      summary: Authenticate with password
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful, session cookie set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessage"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Rate limited
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/logout:
+    post:
+      summary: End session
+      tags: [Auth]
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessage"
+
+  /api/me:
+    get:
+      summary: Check authentication status
+      tags: [Auth]
+      responses:
+        "200":
+          description: Auth status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      authenticated:
+                        type: boolean
+
+  /api/v1/lists:
+    get:
+      summary: Get all lists
+      tags: [Lists]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of shopping lists with counts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ListWithCounts"
+    post:
+      summary: Create a list
+      tags: [Lists]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateListRequest"
+      responses:
+        "201":
+          description: List created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/ShoppingList"
+        "400":
+          description: Invalid name
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: List name already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/lists/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      summary: Get a single list
+      tags: [Lists]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: The list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/ShoppingList"
+        "404":
+          description: List not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      summary: Update a list
+      tags: [Lists]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateListRequest"
+      responses:
+        "200":
+          description: Updated list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/ShoppingList"
+        "404":
+          description: List not found
+    delete:
+      summary: Delete a list
+      description: Cascades to all sections and items in the list.
+      tags: [Lists]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "404":
+          description: List not found
+
+  /api/v1/lists/{id}/activate:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    post:
+      summary: Set a list as active
+      description: Deactivates all other lists and activates this one.
+      tags: [Lists]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List activated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/ShoppingList"
+        "404":
+          description: List not found
+
+  /api/v1/lists/reorder:
+    post:
+      summary: Reorder lists
+      tags: [Lists]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReorderRequest"
+      responses:
+        "200":
+          description: Lists reordered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /api/v1/lists/{id}/template:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    post:
+      summary: Create a template from a list
+      tags: [Lists, Templates]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                sectionIds:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        "201":
+          description: Template created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/TemplateWithItems"
+        "404":
+          description: List not found
+
+  /api/v1/lists/{id}/sections:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      summary: Get sections with items for a list
+      tags: [Sections]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Sections with their items
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SectionWithItems"
+    post:
+      summary: Create a section in a list
+      tags: [Sections]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+      responses:
+        "201":
+          description: Section created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Section"
+
+  /api/v1/sections/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      summary: Get a single section
+      tags: [Sections]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: The section
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Section"
+        "404":
+          description: Section not found
+    put:
+      summary: Update a section
+      tags: [Sections]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+      responses:
+        "200":
+          description: Updated section
+        "404":
+          description: Section not found
+    delete:
+      summary: Delete a section
+      description: Cascades to all items in the section.
+      tags: [Sections]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Section deleted
+        "404":
+          description: Section not found
+
+  /api/v1/sections/reorder:
+    post:
+      summary: Reorder sections
+      tags: [Sections]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReorderRequest"
+      responses:
+        "200":
+          description: Sections reordered
+
+  /api/v1/sections/{id}/items:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      summary: Get items in a section
+      tags: [Items]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Items in the section
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Item"
+    post:
+      summary: Create an item in a section
+      tags: [Items]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateItemRequest"
+      responses:
+        "201":
+          description: Item created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Item"
+
+  /api/v1/items/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      summary: Get a single item
+      tags: [Items]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: The item
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Item"
+        "404":
+          description: Item not found
+    put:
+      summary: Update an item
+      tags: [Items]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateItemRequest"
+      responses:
+        "200":
+          description: Updated item
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Item"
+        "404":
+          description: Item not found
+    delete:
+      summary: Delete an item
+      tags: [Items]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Item deleted
+        "404":
+          description: Item not found
+
+  /api/v1/items/{id}/move:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    post:
+      summary: Move an item to another section
+      tags: [Items]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [targetSectionId]
+              properties:
+                targetSectionId:
+                  type: integer
+      responses:
+        "200":
+          description: Item moved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Item"
+        "404":
+          description: Item not found
+
+  /api/v1/items/reorder:
+    post:
+      summary: Reorder items
+      tags: [Items]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReorderRequest"
+      responses:
+        "200":
+          description: Items reordered
+
+  /api/v1/history:
+    get:
+      summary: Get item history
+      tags: [History]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Search query (fuzzy search if >= 2 chars)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+      responses:
+        "200":
+          description: History entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/HistoryEntry"
+
+  /api/v1/history/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    delete:
+      summary: Delete a history entry
+      tags: [History]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: History entry deleted
+        "404":
+          description: History entry not found
+
+  /api/v1/suggestions:
+    get:
+      summary: Autocomplete suggestions from history
+      tags: [History]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 5
+      responses:
+        "200":
+          description: Matching suggestions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/HistoryEntry"
+
+  /api/v1/templates:
+    get:
+      summary: Get all templates with items
+      tags: [Templates]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Templates with items
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TemplateWithItems"
+    post:
+      summary: Create a template
+      tags: [Templates]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+      responses:
+        "201":
+          description: Template created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Template"
+
+  /api/v1/templates/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      summary: Get a template with items
+      tags: [Templates]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Template with items
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/TemplateWithItems"
+        "404":
+          description: Template not found
+    put:
+      summary: Update a template
+      tags: [Templates]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+      responses:
+        "200":
+          description: Updated template
+        "404":
+          description: Template not found
+    delete:
+      summary: Delete a template
+      tags: [Templates]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Template deleted
+        "404":
+          description: Template not found
+
+  /api/v1/templates/{id}/items:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    post:
+      summary: Add item to template
+      tags: [Templates]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                description:
+                  type: string
+                  nullable: true
+                quantity:
+                  type: string
+                  nullable: true
+                sectionName:
+                  type: string
+                  nullable: true
+      responses:
+        "201":
+          description: Item added to template
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/TemplateItem"
+        "404":
+          description: Template not found
+
+  /api/v1/templates/{templateId}/items/{itemId}:
+    parameters:
+      - name: templateId
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: itemId
+        in: path
+        required: true
+        schema:
+          type: integer
+    put:
+      summary: Update a template item
+      tags: [Templates]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                  nullable: true
+                quantity:
+                  type: string
+                  nullable: true
+                sectionName:
+                  type: string
+                  nullable: true
+      responses:
+        "200":
+          description: Template item updated
+        "404":
+          description: Template item not found
+    delete:
+      summary: Delete a template item
+      tags: [Templates]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Template item deleted
+        "404":
+          description: Template item not found
+
+  /api/v1/templates/{id}/reorder:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    post:
+      summary: Reorder template items
+      tags: [Templates]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReorderRequest"
+      responses:
+        "200":
+          description: Template items reordered
+
+  /api/v1/templates/{id}/apply:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    post:
+      summary: Apply template to a list
+      tags: [Templates]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [listId]
+              properties:
+                listId:
+                  type: integer
+                itemIds:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        "200":
+          description: Template applied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      added:
+                        type: integer
+                      skipped:
+                        type: array
+                        items:
+                          type: string
+        "404":
+          description: List or template not found
+
+  /api/v1/export/summary:
+    get:
+      summary: Get export summary
+      tags: [Import/Export]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Exportable data summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/ExportSummary"
+
+  /api/v1/export:
+    post:
+      summary: Export data as JSON
+      tags: [Import/Export]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                listIds:
+                  type: array
+                  items:
+                    type: integer
+                templateIds:
+                  type: array
+                  items:
+                    type: integer
+                includeHistory:
+                  type: boolean
+      responses:
+        "200":
+          description: Exported data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/ExportData"
+
+  /api/v1/import/preview:
+    post:
+      summary: Preview an import
+      tags: [Import/Export]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExportData"
+      responses:
+        "200":
+          description: Import preview
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/ImportPreview"
+        "400":
+          description: Invalid import data
+
+  /api/v1/import:
+    post:
+      summary: Import data
+      tags: [Import/Export]
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data, options]
+              properties:
+                data:
+                  $ref: "#/components/schemas/ExportData"
+                options:
+                  $ref: "#/components/schemas/ImportOptions"
+      responses:
+        "200":
+          description: Import results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/ImportResult"
+        "400":
+          description: Validation errors
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: session
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  parameters:
+    ResourceId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+
+  schemas:
+    LoginRequest:
+      type: object
+      required: [password]
+      properties:
+        password:
+          type: string
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+
+    SuccessMessage:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+        code:
+          type: string
+
+    ShoppingList:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        icon:
+          type: string
+        sortOrder:
+          type: integer
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    ListWithCounts:
+      allOf:
+        - $ref: "#/components/schemas/ShoppingList"
+        - type: object
+          properties:
+            itemCount:
+              type: integer
+            sectionCount:
+              type: integer
+
+    CreateListRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        icon:
+          type: string
+
+    UpdateListRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        icon:
+          type: string
+        isActive:
+          type: boolean
+
+    Section:
+      type: object
+      properties:
+        id:
+          type: integer
+        listId:
+          type: integer
+        name:
+          type: string
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    SectionWithItems:
+      allOf:
+        - $ref: "#/components/schemas/Section"
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Item"
+
+    Item:
+      type: object
+      properties:
+        id:
+          type: integer
+        sectionId:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        quantity:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, completed, uncertain]
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateItemRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+        quantity:
+          type: string
+
+    UpdateItemRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        quantity:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, completed, uncertain]
+
+    HistoryEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        sectionName:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        quantity:
+          type: string
+          nullable: true
+        frequency:
+          type: integer
+        lastUsed:
+          type: string
+          format: date-time
+
+    Template:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    TemplateItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        templateId:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        quantity:
+          type: string
+          nullable: true
+        sectionName:
+          type: string
+          nullable: true
+        sortOrder:
+          type: integer
+
+    TemplateWithItems:
+      allOf:
+        - $ref: "#/components/schemas/Template"
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/TemplateItem"
+
+    ReorderRequest:
+      type: object
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
+
+    ExportSummary:
+      type: object
+      properties:
+        lists:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              icon:
+                type: string
+              itemCount:
+                type: integer
+        templates:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              itemCount:
+                type: integer
+        historyCount:
+          type: integer
+
+    ExportData:
+      type: object
+      required: [version, exported_at, lists]
+      properties:
+        version:
+          type: string
+          example: "1.0.0"
+        exported_at:
+          type: string
+          format: date-time
+        lists:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              icon:
+                type: string
+              sections:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          description:
+                            type: string
+                            nullable: true
+                          quantity:
+                            type: string
+                            nullable: true
+                          status:
+                            type: string
+        templates:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              items:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    description:
+                      type: string
+                      nullable: true
+                    quantity:
+                      type: string
+                      nullable: true
+                    sectionName:
+                      type: string
+                      nullable: true
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              sectionName:
+                type: string
+                nullable: true
+              description:
+                type: string
+                nullable: true
+              quantity:
+                type: string
+                nullable: true
+              frequency:
+                type: integer
+
+    ImportOptions:
+      type: object
+      required: [mode, importLists, importTemplates, importHistory]
+      properties:
+        mode:
+          type: string
+          enum: [merge, replace]
+        importLists:
+          type: boolean
+        importTemplates:
+          type: boolean
+        importHistory:
+          type: boolean
+
+    ImportPreview:
+      type: object
+      properties:
+        listCount:
+          type: integer
+        templateCount:
+          type: integer
+        historyCount:
+          type: integer
+        existingListConflicts:
+          type: array
+          items:
+            type: string
+        existingTemplateConflicts:
+          type: array
+          items:
+            type: string
+
+    ImportResult:
+      type: object
+      properties:
+        listsImported:
+          type: integer
+        listsMerged:
+          type: integer
+        templatesImported:
+          type: integer
+        historyImported:
+          type: integer
+        skipped:
+          type: array
+          items:
+            type: string

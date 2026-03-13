@@ -50,6 +50,7 @@ function mapHistoryEntry(row: DbHistoryEntry): HistoryEntry {
     };
 }
 
+/** Creates the items service for managing shopping list items, including CRUD, status updates, section moves, reordering, and item history with fuzzy search. */
 export function createItemsService(db: Database) {
     return {
         getById(id: number): Item | null {

@@ -95,6 +95,7 @@ export type ValidationError = {
     message: string;
 };
 
+/** Validates import data structure and returns any validation errors for lists, templates, and history entries. */
 export function validateImportData(data: unknown): { valid: boolean; errors: ValidationError[] } {
     const errors: ValidationError[] = [];
 
@@ -337,6 +338,7 @@ function mergeIntoExistingList(
     return { merged: anyChanges };
 }
 
+/** Creates the import/export service for exporting lists, templates, and history to JSON, and importing them back with merge or replace strategies. */
 export function createImportExportService(db: Database) {
     return {
         getMaxImportSize(): number {

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "A self-hosted shopping list PWA with real-time sync",
   "author": "Fetch Team",
-  "license": "MIT",
+  "license": "GPL-3.0-only",
   "packageManager": "bun@1.2.4",
   "workspaces": [
     "./server",

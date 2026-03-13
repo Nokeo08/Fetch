@@ -2,6 +2,19 @@
 
 Thank you for your interest in contributing to Fetch!
 
+## How to Contribute
+
+1. **Report bugs** -- Open an issue with steps to reproduce
+2. **Suggest features** -- Open an issue describing the feature and its use case
+3. **Submit code** -- Fork the repo, create a branch, and open a pull request
+
+## Code of Conduct
+
+- Be respectful and constructive in all interactions
+- Focus on the technical merits of contributions
+- Welcome newcomers and help them get started
+- Assume good intent
+
 ## Development Setup
 
 ### Prerequisites
@@ -17,129 +30,118 @@ Thank you for your interest in contributing to Fetch!
 4. Set `APP_PASSWORD` in `.env`
 5. Start development: `bun run dev`
 
-## Development Workflow
+See [Development Setup](docs/developer-guide/development-setup.md) for detailed instructions.
 
-### Branch Naming
+## Pull Request Process
 
-- `feature/your-feature-name` - New features
-- `fix/bug-description` - Bug fixes
-- `docs/documentation-update` - Documentation changes
-- `refactor/component-name` - Code refactoring
+1. Create a feature branch from `main`:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
 
-### Commit Messages
+2. Make your changes following the [code style guide](#code-style)
 
-Follow conventional commit format:
+3. Write or update tests for your changes
 
-```
-type(scope): description
+4. Run the full check suite:
+   ```bash
+   bun run build        # No build errors
+   bun run lint         # No linting issues
+   bun run type-check   # No type errors
+   bun run test         # All tests pass
+   ```
 
-[optional body]
+5. Commit with a conventional commit message:
+   ```
+   type(scope): description
+   ```
+   Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
-[optional footer]
-```
+6. Push your branch and open a pull request
 
-Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+7. Describe what your PR does, why, and how to test it
 
-### Code Style
+### PR Review Criteria
 
-See [AGENTS.md](./AGENTS.md) for detailed code style guidelines.
+- All CI checks pass (build, lint, type-check, tests)
+- Code follows project conventions
+- New functionality includes tests
+- Breaking changes are documented
+
+## Branch Naming
+
+- `feature/your-feature-name` -- New features
+- `fix/bug-description` -- Bug fixes
+- `docs/documentation-update` -- Documentation changes
+- `refactor/component-name` -- Code refactoring
+
+## Code Style
+
+See [AGENTS.md](AGENTS.md) for the complete code style reference.
 
 Key points:
-- 4-space indentation
-- Double quotes for strings
-- Semicolons required
-- Use `import type` for type imports
 
-### Testing
+- **Indentation**: 4 spaces
+- **Quotes**: Double quotes for strings
+- **Semicolons**: Required
+- **Imports**: Use `import type` for type-only imports. External imports first, then workspace imports separated by a blank line.
+- **Naming**: camelCase for variables/functions, PascalCase for components/types, UPPER_SNAKE_CASE for constants
+- **Comments**: Avoid unless explicitly needed for complex logic
+- **TypeScript**: `strict: true`, `verbatimModuleSyntax: true`, `noUncheckedIndexedAccess: true`
+
+## Testing
 
 ```bash
 # Run all tests
 bun run test
 
-# Run tests in specific workspace
-cd server && bun test
+# Run tests in a specific workspace
+bun test
+# from within server/ or client/
 
-# Run single test file
+# Single test file
 bun test src/services/lists.test.ts
 
-# Run with coverage
+# Watch mode
+bun test --watch
+
+# With coverage
 bun test --coverage
 ```
 
-### Before Submitting
-
-1. Run lint: `bun run lint`
-2. Run type check: `bun run type-check`
-3. Run tests: `bun run test`
-4. Build: `bun run build`
-
-All checks must pass before submitting a PR.
-
-## Project Architecture
-
-### Technology Stack
-
-- **Runtime**: Bun
-- **Backend**: Hono
-- **Frontend**: React + Vite
-- **Database**: SQLite (embedded)
-- **Build**: Turbo (monorepo)
-
-### Monorepo Structure
-
-- `client/` - Frontend React application
-- `server/` - Backend Hono API
-- `shared/` - Shared TypeScript types
-
-### Key Patterns
-
-- **Services Layer**: Business logic in `/server/src/services/`
-- **Database Layer**: Data access in `/server/src/db/`
-- **Type Safety**: Shared types in `/shared/src/types/`
-- **RPC Client**: Type-safe API calls via Hono RPC
+Tests use an in-memory SQLite database with auth disabled.
 
 ## Adding New Features
 
-### 1. Define Types
+1. **Define types** in `shared/src/types/` and rebuild: `bun run build --filter=shared`
+2. **Create service** in `server/src/services/` using the factory pattern
+3. **Add routes** inside `createApiRoutes()` in `server/src/index.ts` (use relative paths without the `/api/v1` prefix)
+4. **Write tests** for both the service layer and route integration
+5. **Build frontend** components in `client/src/`
+6. **Add API client** functions in `client/src/api/`
 
-Add types to `shared/src/types/`:
+See [Architecture](docs/developer-guide/architecture.md) for a detailed overview of the codebase.
 
-```typescript
-export type NewEntity = {
-    id: number;
-    name: string;
-};
-```
+## Issue Templates
 
-### 2. Create Service
+When filing an issue, please include:
 
-Add service in `server/src/services/`:
+### Bug Reports
+- Steps to reproduce
+- Expected behavior
+- Actual behavior
+- Environment (OS, browser, Bun version, Docker version if applicable)
+- Error messages or logs
 
-```typescript
-export function createNewEntityService(db: Database) {
-    return {
-        getAll(): NewEntity[] { ... },
-        create(name: string): NewEntity { ... },
-    };
-}
-```
+### Feature Requests
+- Description of the feature
+- Use case / motivation
+- Proposed implementation (optional)
 
-### 3. Add Routes
+## Development Roadmap
 
-Add routes in `server/src/index.ts`:
-
-```typescript
-.get("/api/v1/new-entity", (c) => { ... })
-```
-
-### 4. Create Frontend
-
-Add React components in `client/src/`.
-
-## Questions?
-
-Open an issue for bugs or feature requests.
+Feature specifications are tracked in the `stories/` directory. Each story file includes acceptance criteria, technical notes, and implementation guidance.
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under its MIT License.
+By contributing, you agree that your contributions will be licensed under the [GPL-3.0-only](LICENSE) license.

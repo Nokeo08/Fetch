@@ -55,6 +55,7 @@ export type CreateTemplateFromListOptions = {
     sectionIds?: number[];
 };
 
+/** Creates the templates service for managing reusable shopping list templates, including CRUD, item management, applying templates to lists, and creating templates from existing lists. */
 export function createTemplatesService(db: Database) {
     return {
         getAll(): Template[] {
