@@ -14,7 +14,7 @@ docker run -d \
   -p 3000:3000 \
   -e APP_PASSWORD=your-secure-password \
   -v fetch-data:/data \
-  fetch:latest
+  ghcr.io/nokeo08/fetch:latest
 ```
 
 Open `http://localhost:3000` in your browser.
@@ -23,7 +23,7 @@ Open `http://localhost:3000` in your browser.
 
 ```bash
 # Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/Nokeo08/Fetch
 cd fetch
 
 # Configure
@@ -41,7 +41,7 @@ Prerequisites:
 - Git
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/Nokeo08/Fetch
 cd fetch
 bun install
 cp .env.example .env

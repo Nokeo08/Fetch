@@ -1,14 +1,38 @@
 # Docker Deployment
 
-Fetch ships as a single container with both the frontend and backend.
+Fetch ships as a single container with both the frontend and backend. Pre-built multi-platform images (`linux/amd64`, `linux/arm64`) are published to the GitHub Container Registry.
+
+## Container Registry
+
+```
+ghcr.io/nokeo08/fetch
+```
+
+Available tags:
+- `latest` -- latest version tag release
+- `<version>` -- specific release (e.g., `0.1.0`)
+- `<major>.<minor>` -- latest patch for a release line (e.g., `0.1`)
+- `sha-<hash>` -- specific commit
 
 ## Quick Start
+
+### Docker Run (from registry)
+
+```bash
+docker run -d \
+  --name fetch \
+  -p 3000:3000 \
+  -e APP_PASSWORD=your-secure-password \
+  -v fetch-data:/data \
+  --restart unless-stopped \
+  ghcr.io/nokeo08/fetch:latest
+```
 
 ### Docker Compose (Recommended)
 
 ```bash
 # Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/Nokeo08/Fetch
 cd fetch
 
 # Configure
@@ -26,13 +50,11 @@ docker compose logs -f
 docker compose down
 ```
 
-### Docker Run
+### Build from Source
 
 ```bash
-# Build the image
 docker build -t fetch .
 
-# Run the container
 docker run -d \
   --name fetch \
   -p 3000:3000 \
@@ -119,6 +141,8 @@ Response:
 
 ## Image Details
 
+- **Registry**: `ghcr.io/nokeo08/fetch`
+- **Platforms**: `linux/amd64`, `linux/arm64`
 - **Base image**: `oven/bun:1.3.9-alpine` (pinned version)
 - **Multi-stage build**: Build stage installs all dependencies, runtime stage copies only production files
 - **Non-root user**: Runs as `fetch` (UID 1001)
@@ -127,11 +151,18 @@ Response:
 
 ## Updating
 
-```bash
-# Pull latest code
-git pull
+### From Registry
 
-# Rebuild and restart
+```bash
+docker pull ghcr.io/nokeo08/fetch:latest
+docker compose down
+docker compose up -d
+```
+
+### From Source
+
+```bash
+git pull
 docker compose down
 docker compose build
 docker compose up -d

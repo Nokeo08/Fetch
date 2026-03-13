@@ -34,7 +34,7 @@ See [Development Setup](docs/developer-guide/development-setup.md) for detailed 
 
 ## Pull Request Process
 
-1. Create a feature branch from `main`:
+1. Create a feature branch from `master`:
    ```bash
    git checkout -b feature/your-feature-name
    ```

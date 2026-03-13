@@ -1,6 +1,6 @@
 services:
   fetch:
-    image: fetch:latest
+    image: ghcr.io/nokeo08/fetch:latest
     build:
       context: .
       dockerfile: Dockerfile

@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.0] - 2025
+## [0.1.0] - 2025-01-01
 
 ### Added
 - Shopping list CRUD with sections and items
@@ -32,3 +32,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Drag-and-drop reordering for lists, sections, and items
 - Case-insensitive unique list names
 - Comprehensive API with 40+ endpoints
+
+[Unreleased]: https://github.com/Nokeo08/Fetch/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/Nokeo08/Fetch/releases/tag/v0.1.0

@@ -20,7 +20,7 @@ Response:
 ```json
 {
   "success": true,
-  "data": { "message": "Logging in successfully" }
+  "data": { "message": "Logged in successfully" }
 }
 ```
 

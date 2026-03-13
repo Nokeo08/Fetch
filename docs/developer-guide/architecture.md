@@ -135,7 +135,7 @@ fetch/
 │   └── events.ts              # WebSocket event types
 │
 ├── Dockerfile                 # Multi-stage production build
-├── compose.yaml               # Docker Compose for development
+├── compose.yaml               # Docker Compose configuration
 └── compose.prod.yaml          # Production compose overlay
 ```
 

@@ -1,10 +1,16 @@
-# Fetch
+<p align="center">
+  <img src="static/banner.png" alt="Fetch banner" />
+</p>
+
+<h1 align="center">Fetch</h1>
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
 > A lightweight, self-hosted shopping list app for couples and families
 
 Fetch is a Progressive Web App (PWA) for managing shopping lists with real-time synchronization across devices. Built with Bun, Hono, React, and SQLite.
+
+This project was built primarily as a learning exercise and is almost a bit-for-bit copy of [Koffan](https://github.com/PanSalut/Koffan) by PanSalut.
 
 ## Features
 
@@ -33,7 +39,7 @@ docker run -d \
   -e APP_PASSWORD=your-secure-password \
   -v fetch-data:/data \
   --restart unless-stopped \
-  fetch:latest
+  ghcr.io/nokeo08/fetch:latest
 ```
 
 Or with Docker Compose:
@@ -51,6 +57,8 @@ To build from source:
 docker build -t fetch .
 ```
 
+Multi-platform images (`linux/amd64`, `linux/arm64`) are published to `ghcr.io/nokeo08/fetch` on version tags (`v*`) and via manual workflow dispatch.
+
 Open `http://localhost:3000` and log in with your password.
 
 The container runs as a non-root user, includes a health check at `/health`, and stores data in `/data` (must be mounted as a volume). See the [Docker Deployment Guide](docs/deployment/docker.md) for full details.
@@ -60,7 +68,7 @@ The container runs as a non-root user, includes a health check at `/health`, and
 ```bash
 # Prerequisites: Bun >= 1.2.0
 
-git clone <your-repo-url>
+git clone https://github.com/Nokeo08/Fetch
 cd fetch
 bun install
 cp .env.example .env

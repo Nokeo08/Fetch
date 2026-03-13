@@ -11,7 +11,7 @@
 ### 1. Clone and Install
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/Nokeo08/Fetch
 cd fetch
 bun install
 ```
