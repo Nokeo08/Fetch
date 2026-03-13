@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from "react";
-import { useWebSocket, type WebSocketMessage } from "./WebSocketContext";
+import { useWebSocket, type WebSocketMessage } from "./useWebSocket";
 import type { SectionWithItems, Item } from "./api/sections";
 
 export function useRealtimeUpdates(

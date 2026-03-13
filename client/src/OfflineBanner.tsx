@@ -1,4 +1,4 @@
-import { useOffline } from "./OfflineContext";
+import { useOffline } from "./useOffline";
 import { useTranslation } from "./i18n/index";
 import "./OfflineBanner.css";
 

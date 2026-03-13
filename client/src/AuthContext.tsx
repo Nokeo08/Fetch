@@ -1,23 +1,7 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { AuthContext } from "./useAuth";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? "http://localhost:3000";
-
-type AuthContextType = {
-    isAuthenticated: boolean | null;
-    isLoading: boolean;
-    login: (password: string) => Promise<boolean>;
-    logout: () => Promise<void>;
-};
-
-const AuthContext = createContext<AuthContextType | null>(null);
-
-export function useAuth() {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error("useAuth must be used within an AuthProvider");
-    }
-    return context;
-}
 
 type MeResponse = {
     success: boolean;

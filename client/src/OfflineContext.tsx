@@ -1,39 +1,15 @@
 import {
-    createContext,
-    useContext,
     useEffect,
     useState,
     useCallback,
     useRef,
     type ReactNode,
 } from "react";
-import { useAuth } from "./AuthContext";
+import { useAuth } from "./useAuth";
+import { OfflineContext } from "./useOffline";
+import type { OfflineStatus } from "./useOffline";
 import { operationQueue, type QueuedOperation, type OperationType } from "./operationQueue";
 import { offlineDb, type ShoppingList, type Section, type Item } from "./offlineDb";
-
-export type OfflineStatus = "online" | "offline" | "syncing";
-
-type OfflineContextType = {
-    status: OfflineStatus;
-    pendingCount: number;
-    lastSyncTime: Date | null;
-    queueOperation: (type: OperationType, data: unknown) => Promise<void>;
-    syncNow: () => Promise<void>;
-    isOnline: boolean;
-    savePreference: (key: string, value: unknown) => Promise<void>;
-    getPreference: <T>(key: string) => Promise<T | null>;
-};
-
-const OfflineContext = createContext<OfflineContextType>({
-    status: "online",
-    pendingCount: 0,
-    lastSyncTime: null,
-    queueOperation: async () => {},
-    syncNow: async () => {},
-    isOnline: true,
-    savePreference: async () => {},
-    getPreference: async () => null,
-});
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? "http://localhost:3000";
 
@@ -280,8 +256,4 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
             {children}
         </OfflineContext.Provider>
     );
-}
-
-export function useOffline() {
-    return useContext(OfflineContext);
 }

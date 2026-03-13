@@ -1,13 +1,7 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import type { SupportedLanguage, LanguageMetadata } from "./types";
+import { useState, useEffect, useCallback } from "react";
+import type { SupportedLanguage } from "./types";
 import { languages, languageMap, DEFAULT_LANGUAGE } from "./index";
-
-type I18nContextType = {
-    language: SupportedLanguage;
-    setLanguage: (lang: SupportedLanguage) => void;
-    t: (key: string, params?: Record<string, string | number>) => string;
-    languages: LanguageMetadata[];
-};
+import { I18nContext } from "./useTranslation";
 
 const STORAGE_KEY = "fetch-language";
 
@@ -46,8 +40,6 @@ function getInitialLanguage(): SupportedLanguage {
     }
     return detectBrowserLanguage();
 }
-
-const I18nContext = createContext<I18nContextType | null>(null);
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
     const [language, setLanguageState] = useState<SupportedLanguage>(getInitialLanguage);
@@ -101,12 +93,4 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
             {children}
         </I18nContext.Provider>
     );
-}
-
-export function useTranslation(): I18nContextType {
-    const context = useContext(I18nContext);
-    if (!context) {
-        throw new Error("useTranslation must be used within an I18nProvider");
-    }
-    return context;
 }

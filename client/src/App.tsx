@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "./AuthContext";
+import { useAuth } from "./useAuth";
 import { useTranslation } from "./i18n/index";
 import Lists from "./Lists";
 import ConnectionStatus from "./ConnectionStatus";

@@ -1,4 +1,4 @@
-import { useSyncStatus } from "./WebSocketContext";
+import { useSyncStatus } from "./useWebSocket";
 import { useTranslation } from "./i18n/index";
 import "./ConnectionStatus.css";
 

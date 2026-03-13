@@ -166,7 +166,7 @@ describe("i18n system", () => {
         }
 
         it("all translation values are non-empty strings", () => {
-            for (const [_lang, translations] of Object.entries(languageMap)) {
+            for (const translations of Object.values(languageMap)) {
                 const keys = getAllKeys(translations as unknown as Record<string, unknown>);
                 for (const key of keys) {
                     const value = getNestedValue(translations as unknown as Record<string, unknown>, key.split("."));
@@ -217,7 +217,7 @@ describe("i18n system", () => {
                 const enParams = enValue.match(/\{(\w+)\}/g) ?? [];
                 expect(enParams.length).toBeGreaterThan(0);
 
-                for (const [_lang, translations] of Object.entries(languageMap)) {
+                for (const translations of Object.values(languageMap)) {
                     const value = getNestedValue(translations as unknown as Record<string, unknown>, key.split("."));
                     if (value === undefined) continue;
 

@@ -1,27 +1,8 @@
-import { createContext, useContext, useEffect, useRef, useState, useCallback, type ReactNode } from "react";
-
-export type SyncStatus = "connecting" | "connected" | "disconnected" | "reconnecting";
-
-export type WebSocketMessage = {
-    type: string;
-    data: unknown;
-    timestamp: string;
-    clientId: string;
-};
+import { useEffect, useRef, useState, useCallback, type ReactNode } from "react";
+import { WebSocketContext } from "./useWebSocket";
+import type { SyncStatus, WebSocketMessage } from "./useWebSocket";
 
 type MessageHandler = (message: WebSocketMessage) => void;
-
-const WebSocketContext = createContext<{
-    status: SyncStatus;
-    clientId: string | null;
-    send: (type: string, data: unknown) => void;
-    subscribe: (handler: MessageHandler) => () => void;
-}>({
-    status: "disconnected",
-    clientId: null,
-    send: () => {},
-    subscribe: () => () => {},
-});
 
 const RECONNECT_BASE_DELAY = 1000;
 const RECONNECT_MAX_DELAY = 30000;
@@ -164,13 +145,4 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
             {children}
         </WebSocketContext.Provider>
     );
-}
-
-export function useWebSocket() {
-    return useContext(WebSocketContext);
-}
-
-export function useSyncStatus() {
-    const { status } = useWebSocket();
-    return status;
 }

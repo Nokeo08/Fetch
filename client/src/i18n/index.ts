@@ -47,5 +47,6 @@ export const languages: LanguageMetadata[] = [
     { code: "uk", name: "Ukrainian", nativeName: "Українська" },
 ];
 
-export { I18nProvider, useTranslation } from "./I18nContext";
+export { I18nProvider } from "./I18nContext";
+export { useTranslation } from "./useTranslation";
 export type { Translations, SupportedLanguage, LanguageMetadata } from "./types";
