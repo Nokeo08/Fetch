@@ -143,7 +143,7 @@ Response:
 
 - **Registry**: `ghcr.io/nokeo08/fetch`
 - **Platforms**: `linux/amd64`, `linux/arm64`
-- **Base image**: `oven/bun:1.3.9-alpine` (pinned version)
+- **Base image**: `oven/bun:1.3.10-alpine` (pinned version)
 - **Multi-stage build**: Build stage installs all dependencies, runtime stage copies only production files
 - **Non-root user**: Runs as `fetch` (UID 1001)
 - **Exposed port**: 3000

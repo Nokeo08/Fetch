@@ -4,7 +4,7 @@
   "description": "A self-hosted shopping list PWA with real-time sync",
   "author": "Fetch Team",
   "license": "GPL-3.0-only",
-  "packageManager": "bun@1.2.4",
+  "packageManager": "bun@1.3.10",
   "workspaces": [
     "./server",
     "./client",
