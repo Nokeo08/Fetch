@@ -116,11 +116,7 @@
                 "tsconfig.json",
                 "tsconfig.*.json"
             ],
-            "outputs": [
-                "coverage/**",
-                ".nyc_output/**",
-                "test-results/**"
-            ],
+            "outputs": [],
             "env": [
                 "NODE_ENV",
                 "CI"

@@ -1,2 +1,5 @@
 [test]
 preload = ["./server/src/test-setup.ts"]
+coverage = true
+coverageThreshold = { line = 90, function = 90, statement = 90 }
+coverageSkipTestFiles = true
