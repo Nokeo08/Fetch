@@ -98,16 +98,22 @@ export function optionallyAuth(
     };
 }
 
+function isSecureRequest(c: Context): boolean {
+    const forwardedProto = c.req.header("x-forwarded-proto");
+    if (forwardedProto) {
+        return forwardedProto === "https";
+    }
+    return c.req.url.startsWith("https");
+}
+
 export function createSessionCookie(
     c: Context,
     token: string,
     config: Config
 ): void {
-    const isProduction = process.env.NODE_ENV === "production";
-
     setCookie(c, "session", token, {
         httpOnly: true,
-        secure: isProduction,
+        secure: isSecureRequest(c),
         sameSite: "Lax",
         path: "/",
         maxAge: Math.floor(config.session.maxAge / 1000),

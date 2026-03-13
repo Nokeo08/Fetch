@@ -58,6 +58,9 @@ function validateStatus(status: unknown): ItemStatus | null {
     return VALID_STATUSES.includes(status as ItemStatus) ? (status as ItemStatus) : null;
 }
 
+const PUBLIC_DIR = resolve(import.meta.dir, "../public");
+const STATIC_DIR = resolve(import.meta.dir, "../..");
+
 const config = getConfig();
 validateConfig(config);
 
@@ -96,7 +99,7 @@ export const app = new Hono<{ Variables: AppVariables }>()
     .use("*", requestLogger())
     .use("*", errorHandler())
     .use("*", securityHeaders())
-    .use("/static/*", serveStatic({ root: "./" }))
+    .use("/static/*", serveStatic({ root: STATIC_DIR }))
 
     .get("/health", (c) => {
         const dbHealth = checkDatabaseHealth(db);
@@ -112,7 +115,11 @@ export const app = new Hono<{ Variables: AppVariables }>()
         );
     })
 
-    .get("/", (c) => {
+    .get("/", async (c) => {
+        const indexFile = Bun.file(resolve(PUBLIC_DIR, "index.html"));
+        if (await indexFile.exists()) {
+            return c.html(await indexFile.text());
+        }
         return c.text("Fetch Shopping List API");
     })
 
@@ -208,6 +215,20 @@ export const app = new Hono<{ Variables: AppVariables }>()
 
     .route("/", wsApp)
     .route("/api/v1", createApiRoutes(listsService, sectionsService, itemsService, sessionsService, importExportService, config))
+
+    .use("/assets/*", serveStatic({ root: PUBLIC_DIR }))
+    .use("/icons/*", serveStatic({ root: PUBLIC_DIR }))
+    .use("/screenshots/*", serveStatic({ root: PUBLIC_DIR }))
+    .get("/manifest.json", serveStatic({ root: PUBLIC_DIR, path: "/manifest.json" }))
+    .get("/sw.js", serveStatic({ root: PUBLIC_DIR, path: "/sw.js" }))
+    .get("/favicon.ico", serveStatic({ root: PUBLIC_DIR, path: "/favicon.ico" }))
+    .get("*", async (c, next) => {
+        const indexFile = Bun.file(resolve(PUBLIC_DIR, "index.html"));
+        if (await indexFile.exists()) {
+            return c.html(await indexFile.text());
+        }
+        await next();
+    })
 
     .notFound(notFoundHandler);
 

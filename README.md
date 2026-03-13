@@ -117,13 +117,83 @@ fetch/
 
 ### Docker
 
+The application ships as a single container with both frontend and backend. The multi-stage build produces a minimal Alpine-based image.
+
+#### Quick Start with Docker Compose (Recommended)
+
 ```bash
-# Build image
+# Copy environment template and set your password
+cp .env.example .env
+# Edit .env and set APP_PASSWORD
+
+# Start the application
+docker compose up -d
+
+# View logs
+docker compose logs -f
+
+# Stop
+docker compose down
+```
+
+#### Build and Run Manually
+
+```bash
+# Build the image
 docker build -t fetch .
 
-# Run container
-docker run -p 3000:3000 -v fetch-data:/app/data -e APP_PASSWORD=yourpassword fetch
+# Run the container
+docker run -d \
+  --name fetch \
+  -p 3000:3000 \
+  -e APP_PASSWORD=your-secure-password \
+  -v fetch-data:/data \
+  fetch
+
+# Check health
+curl http://localhost:3000/health
 ```
+
+#### Production Deployment
+
+For production, use the compose override file for resource limits and log rotation:
+
+```bash
+docker compose -f compose.yaml -f compose.prod.yaml up -d
+```
+
+#### Volume Mounting
+
+The application stores its SQLite database in the `/data` directory inside the container. This **must** be mounted as a volume to persist data across container restarts.
+
+```bash
+# Named volume (recommended)
+docker run -v fetch-data:/data ...
+
+# Bind mount to host directory
+docker run -v /path/on/host:/data ...
+```
+
+#### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `APP_PASSWORD` | Yes* | - | Password for authentication |
+| `DISABLE_AUTH` | No | `false` | Set to `true` to disable auth |
+| `API_TOKEN` | No | - | Token for REST API access |
+| `PORT` | No | `3000` | HTTP server port |
+| `DATABASE_PATH` | No | `/data/fetch.db` | SQLite database file path |
+| `SESSION_SECRET` | No | random | Session encryption secret |
+| `NODE_ENV` | No | `production` | Node environment |
+
+\* Required unless `DISABLE_AUTH=true`
+
+#### Security Notes
+
+- The container runs as a non-root user (`fetch`, UID 1001)
+- No secrets are baked into the image; all config is via environment variables
+- Uses a specific base image tag (`oven/bun:1.3.9-alpine`), not `latest`
+- Health check endpoint at `/health` is configured with 30s interval, 3s timeout, 3 retries
 
 ### Railway / Render / Fly.io
 

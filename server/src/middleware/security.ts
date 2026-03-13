@@ -11,7 +11,7 @@ type SecurityHeadersOptions = {
 export function securityHeaders(options: SecurityHeadersOptions = {}): MiddlewareHandler {
     const {
         frameOptions = "SAMEORIGIN",
-        contentSecurityPolicy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'",
+        contentSecurityPolicy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' ws: wss:",
         hsts = true,
         hstsMaxAge = 31536000,
         referrerPolicy = "strict-origin-when-cross-origin",

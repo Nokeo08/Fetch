@@ -3,6 +3,8 @@ import { Hono } from "hono";
 import { errorHandler, createErrorHandler, notFoundHandler, HttpError } from "./error";
 import { requestLogger } from "./logger";
 import { securityHeaders, corsHeaders } from "./security";
+import { createSessionCookie } from "./auth";
+import type { Config } from "../config/types";
 
 describe("Error Middleware", () => {
     test("passes through successful requests", async () => {
@@ -124,6 +126,16 @@ describe("Security Headers Middleware", () => {
         expect(csp).toContain("default-src 'self'");
     });
 
+    test("CSP connect-src allows WebSocket connections", async () => {
+        const app = new Hono()
+            .use(securityHeaders())
+            .get("/test", (c) => c.json({ ok: true }));
+
+        const res = await app.request("/test");
+        const csp = res.headers.get("Content-Security-Policy");
+        expect(csp).toContain("connect-src 'self' ws: wss:");
+    });
+
     test("allows custom frame options", async () => {
         const app = new Hono()
             .use(securityHeaders({ frameOptions: "DENY" }))
@@ -164,5 +176,92 @@ describe("CORS Headers Middleware", () => {
             headers: { Origin: "https://example.com" },
         });
         expect(res.headers.get("Access-Control-Allow-Origin")).toBe("https://example.com");
+    });
+});
+
+describe("Session Cookie Secure Flag", () => {
+    const mockConfig: Config = {
+        port: 3000,
+        auth: { password: "test", disabled: false },
+        api: {},
+        database: { path: ":memory:" },
+        session: { secret: "test-secret", maxAge: 86400000 },
+        rateLimit: { maxAttempts: 5, windowMs: 900000, lockoutMs: 1800000 },
+    };
+
+    test("sets Secure flag for HTTPS requests", async () => {
+        const app = new Hono()
+            .get("/test", (c) => {
+                createSessionCookie(c, "test-token", mockConfig);
+                return c.json({ ok: true });
+            });
+
+        const res = await app.request("https://example.com/test");
+        const setCookie = res.headers.get("Set-Cookie") || "";
+        expect(setCookie).toContain("Secure");
+    });
+
+    test("does not set Secure flag for HTTP requests", async () => {
+        const app = new Hono()
+            .get("/test", (c) => {
+                createSessionCookie(c, "test-token", mockConfig);
+                return c.json({ ok: true });
+            });
+
+        const res = await app.request("http://192.168.1.198:3000/test");
+        const setCookie = res.headers.get("Set-Cookie") || "";
+        expect(setCookie).not.toContain("Secure");
+    });
+
+    test("respects X-Forwarded-Proto header for HTTPS behind proxy", async () => {
+        const app = new Hono()
+            .get("/test", (c) => {
+                createSessionCookie(c, "test-token", mockConfig);
+                return c.json({ ok: true });
+            });
+
+        const res = await app.request("http://localhost:3000/test", {
+            headers: { "X-Forwarded-Proto": "https" },
+        });
+        const setCookie = res.headers.get("Set-Cookie") || "";
+        expect(setCookie).toContain("Secure");
+    });
+
+    test("respects X-Forwarded-Proto header for HTTP behind proxy", async () => {
+        const app = new Hono()
+            .get("/test", (c) => {
+                createSessionCookie(c, "test-token", mockConfig);
+                return c.json({ ok: true });
+            });
+
+        const res = await app.request("https://localhost:3000/test", {
+            headers: { "X-Forwarded-Proto": "http" },
+        });
+        const setCookie = res.headers.get("Set-Cookie") || "";
+        expect(setCookie).not.toContain("Secure");
+    });
+
+    test("sets HttpOnly flag on session cookie", async () => {
+        const app = new Hono()
+            .get("/test", (c) => {
+                createSessionCookie(c, "test-token", mockConfig);
+                return c.json({ ok: true });
+            });
+
+        const res = await app.request("http://localhost:3000/test");
+        const setCookie = res.headers.get("Set-Cookie") || "";
+        expect(setCookie).toContain("HttpOnly");
+    });
+
+    test("sets SameSite=Lax on session cookie", async () => {
+        const app = new Hono()
+            .get("/test", (c) => {
+                createSessionCookie(c, "test-token", mockConfig);
+                return c.json({ ok: true });
+            });
+
+        const res = await app.request("http://localhost:3000/test");
+        const setCookie = res.headers.get("Set-Cookie") || "";
+        expect(setCookie).toContain("SameSite=Lax");
     });
 });

@@ -9,7 +9,7 @@ type ApplyTemplateResult = {
     skipped: string[];
 };
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
+const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? "http://localhost:3000";
 
 async function fetchApi<T>(path: string, options?: RequestInit): Promise<ApiResponse<T>> {
     const res = await fetch(`${SERVER_URL}${path}`, {

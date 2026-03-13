@@ -1,0 +1,63 @@
+# Version control
+.git
+.gitignore
+
+# Docker files (prevent recursive context)
+Dockerfile
+.dockerignore
+
+# Dependencies (reinstalled in container)
+node_modules
+
+# Build artifacts (rebuilt in container)
+dist
+build
+.turbo
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+
+# Database files
+data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+
+# Documentation
+README.md
+CONTRIBUTING.md
+DEVELOPMENT_PLAN.md
+AGENTS.md
+LICENSE
+stories/
+
+# Test files
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+coverage/
+
+# IDE and editor files
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# OpenCode
+.opencode
