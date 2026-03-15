@@ -118,6 +118,7 @@ export const app = new Hono<{ Variables: AppVariables }>()
     .get("/", async (c) => {
         const indexFile = Bun.file(resolve(PUBLIC_DIR, "index.html"));
         if (await indexFile.exists()) {
+            c.header("Cache-Control", "no-cache, no-store, must-revalidate");
             return c.html(await indexFile.text());
         }
         return c.text("Fetch Shopping List API");
@@ -220,11 +221,21 @@ export const app = new Hono<{ Variables: AppVariables }>()
     .use("/icons/*", serveStatic({ root: PUBLIC_DIR }))
     .use("/screenshots/*", serveStatic({ root: PUBLIC_DIR }))
     .get("/manifest.json", serveStatic({ root: PUBLIC_DIR, path: "/manifest.json" }))
-    .get("/sw.js", serveStatic({ root: PUBLIC_DIR, path: "/sw.js" }))
+    .get("/sw.js", async (c) => {
+        const file = Bun.file(resolve(PUBLIC_DIR, "sw.js"));
+        if (await file.exists()) {
+            c.header("Cache-Control", "no-cache, no-store, must-revalidate");
+            c.header("Content-Type", "application/javascript");
+            return c.body(await file.text());
+        }
+        return c.notFound();
+    })
     .get("/favicon.ico", serveStatic({ root: PUBLIC_DIR, path: "/favicon.ico" }))
+    .get("/banner.png", serveStatic({ root: PUBLIC_DIR, path: "/banner.png" }))
     .get("*", async (c, next) => {
         const indexFile = Bun.file(resolve(PUBLIC_DIR, "index.html"));
         if (await indexFile.exists()) {
+            c.header("Cache-Control", "no-cache, no-store, must-revalidate");
             return c.html(await indexFile.text());
         }
         await next();

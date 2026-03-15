@@ -37,6 +37,10 @@
     background: #535bf2;
 }
 
+.create-btn-mobile {
+    display: none;
+}
+
 .lists-empty {
     text-align: center;
     padding: 4rem 2rem;
@@ -392,19 +396,37 @@
     }
 
     .lists-header {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 1rem;
+        flex-wrap: wrap;
+        justify-content: flex-start;
     }
 
     .lists-header h1 {
-        text-align: center;
         font-size: 1.5rem;
     }
 
-    .create-btn {
-        width: 100%;
+    .lists-header .create-btn {
+        display: none;
+    }
+
+    .create-btn-mobile {
+        display: flex;
+        align-items: center;
         justify-content: center;
+        width: 100%;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: #646cff;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background 0.25s;
+        margin-bottom: 1.5rem;
+    }
+
+    .create-btn-mobile:hover {
+        background: #535bf2;
     }
 
     .lists-grid {

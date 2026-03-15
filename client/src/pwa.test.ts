@@ -271,6 +271,17 @@ describe("Service Worker", () => {
         expect(sw).toContain("caches.keys()");
         expect(sw).toContain("caches.delete");
     });
+
+    test("service worker has build version placeholder for cache busting", () => {
+        const sw = readFileSync(swPath, "utf-8");
+        expect(sw).toContain("VERSION");
+        expect(sw).toContain("CACHE_NAME");
+    });
+
+    test("service worker uses network-first for navigation requests", () => {
+        const sw = readFileSync(swPath, "utf-8");
+        expect(sw).toContain('event.request.mode === "navigate"');
+    });
 });
 
 describe("Service Worker Registration", () => {
@@ -284,6 +295,16 @@ describe("Service Worker Registration", () => {
 
     test("main.tsx checks for serviceWorker support", () => {
         expect(main).toContain('"serviceWorker" in navigator');
+    });
+
+    test("main.tsx listens for controllerchange to auto-reload", () => {
+        expect(main).toContain("controllerchange");
+        expect(main).toContain("window.location.reload()");
+    });
+
+    test("main.tsx polls for service worker updates periodically", () => {
+        expect(main).toContain("registration.update()");
+        expect(main).toContain("setInterval");
     });
 });
 

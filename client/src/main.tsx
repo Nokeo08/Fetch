@@ -13,10 +13,22 @@ import InstallBanner from "./InstallBanner.tsx";
 const queryClient = new QueryClient();
 
 if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw.js").catch((err) => {
+    let isReloading = false;
+
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (!isReloading) {
+            isReloading = true;
+            window.location.reload();
+        }
+    });
+
+    window.addEventListener("load", async () => {
+        try {
+            const registration = await navigator.serviceWorker.register("/sw.js");
+            setInterval(() => registration.update(), 5 * 60 * 1000);
+        } catch (err) {
             console.error("[SW] Registration failed:", err);
-        });
+        }
     });
 }
 

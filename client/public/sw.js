@@ -1,9 +1,11 @@
-const CACHE_NAME = "fetch-v2";
+const VERSION = "__BUILD_HASH__";
+const CACHE_NAME = "fetch-" + VERSION;
 const STATIC_ASSETS = [
     "/",
     "/index.html",
     "/manifest.json",
     "/favicon.ico",
+    "/banner.png",
     "/icons/icon-48.png",
     "/icons/icon-72.png",
     "/icons/icon-96.png",
@@ -64,25 +66,45 @@ self.addEventListener("fetch", (event) => {
         return;
     }
 
+    if (event.request.mode === "navigate") {
+        event.respondWith(
+            fetch(event.request)
+                .then((networkResponse) => {
+                    if (networkResponse.ok) {
+                        const responseClone = networkResponse.clone();
+                        caches.open(CACHE_NAME).then((cache) => {
+                            cache.put(event.request, responseClone);
+                        });
+                    }
+                    return networkResponse;
+                })
+                .catch(() => {
+                    return caches.match("/index.html").then((cached) => {
+                        return cached || new Response("Offline", { status: 503 });
+                    });
+                }),
+        );
+        return;
+    }
+
     event.respondWith(
         caches.match(event.request).then((response) => {
             if (response) {
                 return response;
             }
-            return fetch(event.request).then((networkResponse) => {
-                if (networkResponse.ok) {
-                    const responseClone = networkResponse.clone();
-                    caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, responseClone);
-                    });
-                }
-                return networkResponse;
-            }).catch(() => {
-                if (event.request.mode === "navigate") {
-                    return caches.match("/index.html");
-                }
-                return new Response("Offline", { status: 503 });
-            });
+            return fetch(event.request)
+                .then((networkResponse) => {
+                    if (networkResponse.ok) {
+                        const responseClone = networkResponse.clone();
+                        caches.open(CACHE_NAME).then((cache) => {
+                            cache.put(event.request, responseClone);
+                        });
+                    }
+                    return networkResponse;
+                })
+                .catch(() => {
+                    return new Response("Offline", { status: 503 });
+                });
         }),
     );
 });

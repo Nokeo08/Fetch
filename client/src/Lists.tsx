@@ -212,6 +212,9 @@ export default function Lists() {
                     {t("lists.newList")}
                 </button>
             </div>
+            <button className="create-btn-mobile" onClick={openCreateModal}>
+                {t("lists.newList")}
+            </button>
 
             {error && <div className="error-message">{error}</div>}
 
