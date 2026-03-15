@@ -951,6 +951,16 @@ export default function ListDetail() {
                 </div>
             )}
 
+            {sections.length > 0 && (
+                <button
+                    className="fab-add-item"
+                    onClick={() => openAddItemModal(sections[0]!.id)}
+                    aria-label={t("items.addItem")}
+                >
+                    +
+                </button>
+            )}
+
             {showSectionModal && (
                 <div className="modal-overlay" onClick={() => setShowSectionModal(false)}>
                     <div className="modal" onClick={(e) => e.stopPropagation()}>

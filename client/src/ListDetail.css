@@ -275,6 +275,48 @@
     cursor: not-allowed;
 }
 
+.fab-add-item {
+    display: none;
+    position: fixed;
+    bottom: calc(1.5rem + var(--safe-area-bottom));
+    right: calc(1.5rem + var(--safe-area-right));
+    width: 48px;
+    height: 48px;
+    min-height: 48px;
+    padding: 0;
+    border-radius: 6px;
+    border: none;
+    background: #646cff;
+    color: #fff;
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 999;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    transition: background 0.15s ease;
+}
+
+.fab-add-item:hover {
+    background: #535bf2;
+}
+
+.fab-add-item:active {
+    transform: scale(0.95);
+}
+
+@keyframes fab-scale-in {
+    0% {
+        transform: scale(0);
+    }
+    80% {
+        transform: scale(1.08);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
 .items-list {
     display: flex;
     flex-direction: column;
@@ -583,5 +625,16 @@
 
     .list-title h1 {
         font-size: 1.4rem;
+    }
+
+    .quick-add-bar {
+        display: none;
+    }
+
+    .fab-add-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fab-scale-in 0.2s ease-out;
     }
 }
