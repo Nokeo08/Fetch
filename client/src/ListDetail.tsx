@@ -63,6 +63,8 @@ export default function ListDetail() {
     const [showClearCompletedModal, setShowClearCompletedModal] = useState(false);
     const [clearingSection, setClearingSection] = useState<SectionWithItems | null>(null);
 
+    const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+
     const [showApplyTemplateModal, setShowApplyTemplateModal] = useState(false);
     const [showSaveAsTemplateModal, setShowSaveAsTemplateModal] = useState(false);
     const [availableTemplates, setAvailableTemplates] = useState<TemplateWithItems[]>([]);
@@ -70,6 +72,7 @@ export default function ListDetail() {
     const [selectedItemIds, setSelectedItemIds] = useState<Set<number>>(new Set());
     const [templateName, setTemplateName] = useState("");
 
+    const headerMenuRef = useRef<HTMLDivElement>(null);
     const deleteSectionModalRef = useRef<HTMLDivElement>(null);
     const deleteItemModalRef = useRef<HTMLDivElement>(null);
     const clearCompletedModalRef = useRef<HTMLDivElement>(null);
@@ -117,6 +120,17 @@ export default function ListDetail() {
             saveAsTemplateModalRef.current.focus();
         }
     }, [showSaveAsTemplateModal]);
+
+    useEffect(() => {
+        if (!headerMenuOpen) return;
+        const handleClickOutside = (e: MouseEvent) => {
+            if (headerMenuRef.current && !headerMenuRef.current.contains(e.target as Node)) {
+                setHeaderMenuOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [headerMenuOpen]);
 
     useEffect(() => {
         if (sections.length > 0 && (quickAddSectionId === null || !sections.some((s) => s.id === quickAddSectionId))) {
@@ -663,9 +677,10 @@ export default function ListDetail() {
     return (
         <div className="list-detail-page">
             <ConnectionStatus />
-            <div className="list-detail-header">
+            <div className="list-detail-header" ref={headerMenuRef}>
                 <button className="back-btn" onClick={() => navigate("/")}>
-                    ← {t("listDetail.backBtn")}
+                    <span className="back-arrow">←</span>
+                    <span className="back-text">{t("common.back")}</span>
                 </button>
                 <div className="list-title">
                     <span className="list-title-icon">{list.icon}</span>
@@ -682,7 +697,26 @@ export default function ListDetail() {
                         {t("listDetail.addSection")}
                     </button>
                 </div>
+                <button
+                    className="list-hamburger-btn"
+                    onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
+                    aria-label={headerMenuOpen ? "Close menu" : "Menu"}
+                >
+                    {headerMenuOpen ? "✕" : "☰"}
+                </button>
+                <div className={`list-header-menu ${headerMenuOpen ? "open" : ""}`}>
+                    <button className="template-btn" onClick={() => { setHeaderMenuOpen(false); openApplyTemplateModal(); }}>
+                        {t("listDetail.applyTemplate")}
+                    </button>
+                    <button className="template-btn secondary" onClick={() => { setHeaderMenuOpen(false); openSaveAsTemplateModal(); }}>
+                        {t("listDetail.saveAsTemplate")}
+                    </button>
+                </div>
             </div>
+
+            <button className="add-section-btn-mobile" onClick={openSectionModal}>
+                {t("listDetail.addSection")}
+            </button>
 
             {sections.length > 0 && (
                 <div className="quick-add-bar">

@@ -245,7 +245,8 @@ export default function Settings() {
         <div className="settings-page">
             <div className="settings-header">
                 <button className="back-btn" onClick={() => navigate("/")}>
-                    {t("common.back")}
+                    <span className="back-arrow">←</span>
+                    <span className="back-text">{t("common.back")}</span>
                 </button>
                 <h1>{t("settings.title")}</h1>
             </div>

@@ -253,7 +253,8 @@ export default function TemplateDetail() {
         <div className="template-detail-page">
             <div className="template-detail-header">
                 <button className="back-btn" onClick={() => navigate("/templates")}>
-                    ← {t("common.back")}
+                    <span className="back-arrow">←</span>
+                    <span className="back-text">{t("common.back")}</span>
                 </button>
                 <h1>{template.name}</h1>
                 <button className="edit-name-btn" onClick={openEditNameModal}>

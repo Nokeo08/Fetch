@@ -416,13 +416,10 @@
     }
 
     .settings-header {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.75rem;
+        flex-wrap: wrap;
     }
 
     .settings-header h1 {
-        text-align: center;
         font-size: 1.5rem;
     }
 

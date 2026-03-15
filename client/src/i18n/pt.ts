@@ -39,7 +39,6 @@ const pt: Translations = {
     nav: {
         templates: "Modelos",
         settings: "Definições",
-        backToLists: "Voltar às listas",
     },
     lists: {
         title: "Listas de compras",
@@ -65,7 +64,6 @@ const pt: Translations = {
         activate: "Ativar",
     },
     listDetail: {
-        backBtn: "Voltar",
         applyTemplate: "Aplicar modelo",
         saveAsTemplate: "Guardar como modelo",
         addSection: "+ Adicionar secção",

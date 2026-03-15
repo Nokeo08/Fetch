@@ -39,7 +39,6 @@ const pl: Translations = {
     nav: {
         templates: "Szablony",
         settings: "Ustawienia",
-        backToLists: "Powr\u00F3t do list",
     },
     lists: {
         title: "Listy zakup\u00F3w",
@@ -65,7 +64,6 @@ const pl: Translations = {
         activate: "Aktywuj",
     },
     listDetail: {
-        backBtn: "Wstecz",
         applyTemplate: "Zastosuj szablon",
         saveAsTemplate: "Zapisz jako szablon",
         addSection: "+ Dodaj sekcj\u0119",

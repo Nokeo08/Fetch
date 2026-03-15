@@ -39,7 +39,6 @@ const el: Translations = {
     nav: {
         templates: "Πρότυπα",
         settings: "Ρυθμίσεις",
-        backToLists: "Πίσω στις λίστες",
     },
     lists: {
         title: "Λίστες αγορών",
@@ -65,7 +64,6 @@ const el: Translations = {
         activate: "Ενεργοποίηση",
     },
     listDetail: {
-        backBtn: "Πίσω",
         applyTemplate: "Εφαρμογή προτύπου",
         saveAsTemplate: "Αποθήκευση ως πρότυπο",
         addSection: "+ Προσθήκη ενότητας",

@@ -39,7 +39,6 @@ const lt: Translations = {
     nav: {
         templates: "Šablonai",
         settings: "Nustatymai",
-        backToLists: "Atgal į sąrašus",
     },
     lists: {
         title: "Pirkinių sąrašai",
@@ -65,7 +64,6 @@ const lt: Translations = {
         activate: "Aktyvuoti",
     },
     listDetail: {
-        backBtn: "Atgal",
         applyTemplate: "Taikyti šabloną",
         saveAsTemplate: "Išsaugoti kaip šabloną",
         addSection: "+ Pridėti skyrių",

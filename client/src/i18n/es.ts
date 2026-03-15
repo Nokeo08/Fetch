@@ -39,7 +39,6 @@ const es: Translations = {
     nav: {
         templates: "Plantillas",
         settings: "Ajustes",
-        backToLists: "Volver a listas",
     },
     lists: {
         title: "Listas de compras",
@@ -65,7 +64,6 @@ const es: Translations = {
         activate: "Activar",
     },
     listDetail: {
-        backBtn: "Volver",
         applyTemplate: "Aplicar plantilla",
         saveAsTemplate: "Guardar como plantilla",
         addSection: "+ A\u00F1adir secci\u00F3n",

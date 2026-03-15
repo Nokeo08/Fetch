@@ -39,7 +39,6 @@ const de: Translations = {
     nav: {
         templates: "Vorlagen",
         settings: "Einstellungen",
-        backToLists: "Zur\u00FCck zu Listen",
     },
     lists: {
         title: "Einkaufslisten",
@@ -65,7 +64,6 @@ const de: Translations = {
         activate: "Aktivieren",
     },
     listDetail: {
-        backBtn: "Zur\u00FCck",
         applyTemplate: "Vorlage anwenden",
         saveAsTemplate: "Als Vorlage speichern",
         addSection: "+ Bereich hinzuf\u00FCgen",

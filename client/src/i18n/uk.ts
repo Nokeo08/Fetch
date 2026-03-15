@@ -39,7 +39,6 @@ const uk: Translations = {
     nav: {
         templates: "Шаблони",
         settings: "Налаштування",
-        backToLists: "Назад до списків",
     },
     lists: {
         title: "Списки покупок",
@@ -65,7 +64,6 @@ const uk: Translations = {
         activate: "Активувати",
     },
     listDetail: {
-        backBtn: "Назад",
         applyTemplate: "Застосувати шаблон",
         saveAsTemplate: "Зберегти як шаблон",
         addSection: "+ Додати розділ",

@@ -39,7 +39,6 @@ const sv: Translations = {
     nav: {
         templates: "Mallar",
         settings: "Inställningar",
-        backToLists: "Tillbaka till listor",
     },
     lists: {
         title: "Inköpslistor",
@@ -65,7 +64,6 @@ const sv: Translations = {
         activate: "Aktivera",
     },
     listDetail: {
-        backBtn: "Tillbaka",
         applyTemplate: "Använd mall",
         saveAsTemplate: "Spara som mall",
         addSection: "+ Lägg till sektion",

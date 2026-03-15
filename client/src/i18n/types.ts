@@ -37,7 +37,6 @@ export type Translations = {
     nav: {
         templates: string;
         settings: string;
-        backToLists: string;
     };
     lists: {
         title: string;
@@ -63,7 +62,6 @@ export type Translations = {
         activate: string;
     };
     listDetail: {
-        backBtn: string;
         applyTemplate: string;
         saveAsTemplate: string;
         addSection: string;

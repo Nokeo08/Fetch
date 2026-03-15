@@ -39,7 +39,6 @@ const no: Translations = {
     nav: {
         templates: "Maler",
         settings: "Innstillinger",
-        backToLists: "Tilbake til lister",
     },
     lists: {
         title: "Handlelister",
@@ -65,7 +64,6 @@ const no: Translations = {
         activate: "Aktiver",
     },
     listDetail: {
-        backBtn: "Tilbake",
         applyTemplate: "Bruk mal",
         saveAsTemplate: "Lagre som mal",
         addSection: "+ Legg til seksjon",

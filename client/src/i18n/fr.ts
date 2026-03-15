@@ -39,7 +39,6 @@ const fr: Translations = {
     nav: {
         templates: "Modèles",
         settings: "Paramètres",
-        backToLists: "Retour aux listes",
     },
     lists: {
         title: "Listes de courses",
@@ -65,7 +64,6 @@ const fr: Translations = {
         activate: "Activer",
     },
     listDetail: {
-        backBtn: "Retour",
         applyTemplate: "Appliquer un modèle",
         saveAsTemplate: "Enregistrer comme modèle",
         addSection: "+ Ajouter une section",

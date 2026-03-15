@@ -92,6 +92,34 @@ button:focus-visible {
     outline: 4px auto -webkit-focus-ring-color;
 }
 
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    background: #333;
+    color: rgba(255, 255, 255, 0.87);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+}
+
+.back-btn:hover {
+    background: #444;
+}
+
+@media (max-width: 768px) {
+    .back-btn .back-text {
+        display: none;
+    }
+
+    .back-btn {
+        padding: 0.5rem 0.75rem;
+    }
+}
+
 @media (prefers-color-scheme: light) {
     :root {
     color: #213547;

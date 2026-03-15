@@ -39,7 +39,6 @@ const sk: Translations = {
     nav: {
         templates: "Šablóny",
         settings: "Nastavenia",
-        backToLists: "Späť na zoznamy",
     },
     lists: {
         title: "Nákupné zoznamy",
@@ -65,7 +64,6 @@ const sk: Translations = {
         activate: "Aktivovať",
     },
     listDetail: {
-        backBtn: "Späť",
         applyTemplate: "Použiť šablónu",
         saveAsTemplate: "Uložiť ako šablónu",
         addSection: "+ Pridať sekciu",

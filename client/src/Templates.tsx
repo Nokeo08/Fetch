@@ -119,13 +119,17 @@ export default function Templates() {
         <div className="templates-page">
             <div className="templates-header">
                 <button className="back-btn" onClick={() => navigate("/")}>
-                ← {t("nav.backToLists")}
-            </button>
+                    <span className="back-arrow">←</span>
+                    <span className="back-text">{t("common.back")}</span>
+                </button>
                 <h1>{t("templates.title")}</h1>
                 <button className="create-btn" onClick={openCreateModal}>
+                    {t("templates.addTemplate")}
+                </button>
+            </div>
+            <button className="create-btn-mobile" onClick={openCreateModal}>
                 {t("templates.addTemplate")}
             </button>
-            </div>
 
             {templates.length === 0 ? (
                 <div className="templates-empty">

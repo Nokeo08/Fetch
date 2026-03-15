@@ -34,7 +34,7 @@ export default function Login() {
     return (
         <div className="login-container">
             <div className="login-card">
-                <h1>{t("app.name")}</h1>
+                <img src="/banner.png" alt={t("app.name")} className="login-banner" />
                 <p>{t("app.tagline")}</p>
 
                 <form onSubmit={handleSubmit} className="login-form">
